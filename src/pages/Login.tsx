@@ -168,16 +168,28 @@ const Login = () => {
           </CardContent>
         </Card>
 
-        <p className="text-center text-sm text-muted-foreground">
-          É cliente?{' '}
-          <Button
-            variant="link"
-            className="p-0 h-auto text-primary"
-            onClick={() => navigate('/agendar')}
-          >
-            Agende aqui
-          </Button>
-        </p>
+        <div className="text-center text-sm text-muted-foreground space-y-2">
+          <p>
+            Não tem conta?{' '}
+            <Button
+              variant="link"
+              className="p-0 h-auto text-primary"
+              onClick={() => navigate('/cadastro')}
+            >
+              Cadastre sua empresa
+            </Button>
+          </p>
+          <p>
+            É cliente?{' '}
+            <Button
+              variant="link"
+              className="p-0 h-auto text-primary"
+              onClick={() => navigate('/agendar')}
+            >
+              Agende aqui
+            </Button>
+          </p>
+        </div>
       </div>
     </div>
   );

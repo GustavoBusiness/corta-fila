@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { AppProvider } from "@/contexts/AppContext";
 
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import ClientBooking from "./pages/ClientBooking";
 import AdminLayout from "./layouts/AdminLayout";
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -37,6 +38,7 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Navigate to="/agendar" replace />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/cadastro" element={<Register />} />
                 <Route path="/agendar" element={<ClientBooking />} />
                 
                 {/* Admin Routes */}
