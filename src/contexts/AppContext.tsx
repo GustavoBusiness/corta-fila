@@ -6,12 +6,16 @@ import {
   clients as initialClients,
   products as initialProducts,
   blockedDays as initialBlockedDays,
+  blockedTimes as initialBlockedTimes,
+  defaultSettings,
   Appointment, 
   Service, 
   Professional, 
   Client, 
   Product,
-  BlockedDay
+  BlockedDay,
+  BlockedTime,
+  BusinessSettings
 } from '@/lib/mock-data';
 
 interface AppContextType {
@@ -21,6 +25,8 @@ interface AppContextType {
   clients: Client[];
   products: Product[];
   blockedDays: BlockedDay[];
+  blockedTimes: BlockedTime[];
+  settings: BusinessSettings;
   addAppointment: (appointment: Omit<Appointment, 'id' | 'createdAt'>) => void;
   updateAppointment: (id: string, data: Partial<Appointment>) => void;
   deleteAppointment: (id: string) => void;
@@ -38,6 +44,9 @@ interface AppContextType {
   deleteProduct: (id: string) => void;
   addBlockedDay: (blockedDay: Omit<BlockedDay, 'id'>) => void;
   removeBlockedDay: (id: string) => void;
+  addBlockedTime: (blockedTime: Omit<BlockedTime, 'id'>) => void;
+  removeBlockedTime: (id: string) => void;
+  updateSettings: (newSettings: Partial<BusinessSettings>) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -49,8 +58,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [clients, setClients] = useState<Client[]>(initialClients);
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [blockedDays, setBlockedDays] = useState<BlockedDay[]>(initialBlockedDays);
+  const [blockedTimes, setBlockedTimes] = useState<BlockedTime[]>(initialBlockedTimes);
+  const [settings, setSettings] = useState<BusinessSettings>(() => {
+    const saved = localStorage.getItem('corta-fila-settings');
+    return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
+  });
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
+
+  // Settings
+  const updateSettings = (newSettings: Partial<BusinessSettings>) => {
+    const updated = { ...settings, ...newSettings };
+    setSettings(updated);
+    localStorage.setItem('corta-fila-settings', JSON.stringify(updated));
+  };
 
   // Appointments
   const addAppointment = (appointment: Omit<Appointment, 'id' | 'createdAt'>) => {
@@ -135,6 +156,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setBlockedDays(prev => prev.filter(b => b.id !== id));
   };
 
+  // Blocked Times
+  const addBlockedTime = (blockedTime: Omit<BlockedTime, 'id'>) => {
+    setBlockedTimes(prev => [...prev, { ...blockedTime, id: generateId() }]);
+  };
+
+  const removeBlockedTime = (id: string) => {
+    setBlockedTimes(prev => prev.filter(b => b.id !== id));
+  };
+
   return (
     <AppContext.Provider value={{
       appointments,
@@ -143,6 +173,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       clients,
       products,
       blockedDays,
+      blockedTimes,
+      settings,
       addAppointment,
       updateAppointment,
       deleteAppointment,
@@ -159,7 +191,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       updateProduct,
       deleteProduct,
       addBlockedDay,
-      removeBlockedDay
+      removeBlockedDay,
+      addBlockedTime,
+      removeBlockedTime,
+      updateSettings
     }}>
       {children}
     </AppContext.Provider>

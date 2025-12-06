@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
-import { formatPhone, getWhatsAppLink } from '@/lib/mock-data';
+import { formatPhone } from '@/lib/mock-data';
+import WhatsAppButton from '@/components/WhatsAppButton';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +13,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { toast } from 'sonner';
 import {
   Plus,
-  MessageCircle,
   Pencil,
   Trash2,
   UserCircle
@@ -31,10 +32,12 @@ const AdminProfissionais = () => {
   const { professionals, services, addProfessional, updateProfessional, deleteProfessional } = useApp();
   const [showDialog, setShowDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [photo, setPhoto] = useState('');
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [startTime, setStartTime] = useState('09:00');
@@ -47,6 +50,7 @@ const AdminProfissionais = () => {
       setRole(prof.role);
       setPhone(prof.phone);
       setEmail(prof.email);
+      setPhoto(prof.photo || '');
       setSelectedServices(prof.services);
       setSelectedDays(prof.workDays);
       setStartTime(prof.workHours.start);
@@ -57,6 +61,7 @@ const AdminProfissionais = () => {
       setRole('');
       setPhone('');
       setEmail('');
+      setPhoto('');
       setSelectedServices([]);
       setSelectedDays([1, 2, 3, 4, 5]);
       setStartTime('09:00');
@@ -75,6 +80,7 @@ const AdminProfissionais = () => {
     const profData = {
       name,
       avatar,
+      photo: photo || undefined,
       role,
       phone,
       email,
@@ -93,10 +99,11 @@ const AdminProfissionais = () => {
     setShowDialog(false);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Tem certeza que deseja excluir este profissional?')) {
-      deleteProfessional(id);
+  const handleDelete = () => {
+    if (deleteConfirm) {
+      deleteProfessional(deleteConfirm);
       toast.success('Profissional excluído!');
+      setDeleteConfirm(null);
     }
   };
 
@@ -138,9 +145,17 @@ const AdminProfissionais = () => {
           >
             <CardContent className="p-4">
               <div className="flex items-start gap-4">
-                <div className="h-14 w-14 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                  <span className="text-xl font-bold text-primary">{prof.avatar}</span>
-                </div>
+                {prof.photo ? (
+                  <img 
+                    src={prof.photo} 
+                    alt={prof.name}
+                    className="h-14 w-14 rounded-full object-cover shrink-0"
+                  />
+                ) : (
+                  <div className="h-14 w-14 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                    <span className="text-xl font-bold text-primary">{prof.avatar}</span>
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold truncate">{prof.name}</h3>
                   <p className="text-sm text-muted-foreground">{prof.role}</p>
@@ -167,14 +182,7 @@ const AdminProfissionais = () => {
               </div>
 
               <div className="mt-4 flex items-center justify-end gap-1">
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="text-success"
-                  onClick={() => window.open(getWhatsAppLink(prof.phone), '_blank')}
-                >
-                  <MessageCircle className="h-5 w-5" />
-                </Button>
+                <WhatsAppButton phone={prof.phone} />
                 <Button
                   size="icon"
                   variant="ghost"
@@ -186,7 +194,7 @@ const AdminProfissionais = () => {
                   size="icon"
                   variant="ghost"
                   className="text-destructive"
-                  onClick={() => handleDelete(prof.id)}
+                  onClick={() => setDeleteConfirm(prof.id)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -230,6 +238,14 @@ const AdminProfissionais = () => {
                   onChange={(e) => setRole(e.target.value)}
                 />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label>URL da Foto</Label>
+              <Input
+                placeholder="https://exemplo.com/foto.jpg"
+                value={photo}
+                onChange={(e) => setPhoto(e.target.value)}
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -315,6 +331,16 @@ const AdminProfissionais = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        onOpenChange={(open) => !open && setDeleteConfirm(null)}
+        title="Excluir Profissional"
+        description="Tem certeza que deseja excluir este profissional? Esta ação não pode ser desfeita."
+        onConfirm={handleDelete}
+        confirmText="Excluir"
+        variant="destructive"
+      />
     </div>
   );
 };

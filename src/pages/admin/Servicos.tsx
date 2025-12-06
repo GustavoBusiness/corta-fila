@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
-import { formatCurrency, ServiceType } from '@/lib/mock-data';
+import { formatCurrency, ServiceType, serviceColors } from '@/lib/mock-data';
 import ServiceTag from '@/components/ServiceTag';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +31,7 @@ const AdminServicos = () => {
   const { services, addService, updateService, deleteService } = useApp();
   const [showDialog, setShowDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [type, setType] = useState<ServiceType>('corte');
   const [price, setPrice] = useState('');
@@ -66,7 +68,8 @@ const AdminServicos = () => {
       type,
       price: parseFloat(price),
       duration: parseInt(duration),
-      description
+      description,
+      color: serviceColors[type].split(' ')[0]
     };
 
     if (editingId) {
@@ -79,10 +82,11 @@ const AdminServicos = () => {
     setShowDialog(false);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Tem certeza que deseja excluir este serviço?')) {
-      deleteService(id);
+  const handleDelete = () => {
+    if (deleteConfirm) {
+      deleteService(deleteConfirm);
       toast.success('Serviço excluído!');
+      setDeleteConfirm(null);
     }
   };
 
@@ -122,7 +126,7 @@ const AdminServicos = () => {
                     size="icon"
                     variant="ghost"
                     className="h-8 w-8 text-destructive"
-                    onClick={() => handleDelete(service.id)}
+                    onClick={() => setDeleteConfirm(service.id)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -221,6 +225,16 @@ const AdminServicos = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        onOpenChange={(open) => !open && setDeleteConfirm(null)}
+        title="Excluir Serviço"
+        description="Tem certeza que deseja excluir este serviço? Esta ação não pode ser desfeita."
+        onConfirm={handleDelete}
+        confirmText="Excluir"
+        variant="destructive"
+      />
     </div>
   );
 };

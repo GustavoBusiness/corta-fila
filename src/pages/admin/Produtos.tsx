@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { formatCurrency } from '@/lib/mock-data';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +24,7 @@ const AdminProdutos = () => {
   const [search, setSearch] = useState('');
   const [showDialog, setShowDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
@@ -77,10 +79,11 @@ const AdminProdutos = () => {
     setShowDialog(false);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Tem certeza que deseja excluir este produto?')) {
-      deleteProduct(id);
+  const handleDelete = () => {
+    if (deleteConfirm) {
+      deleteProduct(deleteConfirm);
       toast.success('Produto excluído!');
+      setDeleteConfirm(null);
     }
   };
 
@@ -130,7 +133,7 @@ const AdminProdutos = () => {
                     size="icon"
                     variant="ghost"
                     className="h-8 w-8 text-destructive"
-                    onClick={() => handleDelete(product.id)}
+                    onClick={() => setDeleteConfirm(product.id)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -232,6 +235,16 @@ const AdminProdutos = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        onOpenChange={(open) => !open && setDeleteConfirm(null)}
+        title="Excluir Produto"
+        description="Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita."
+        onConfirm={handleDelete}
+        confirmText="Excluir"
+        variant="destructive"
+      />
     </div>
   );
 };
