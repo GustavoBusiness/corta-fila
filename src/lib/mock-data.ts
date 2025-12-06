@@ -9,12 +9,14 @@ export interface Service {
   price: number;
   duration: number; // in minutes
   description: string;
+  color: string; // background color for agenda
 }
 
 export interface Professional {
   id: string;
   name: string;
   avatar: string;
+  photo?: string;
   role: string;
   phone: string;
   email: string;
@@ -47,6 +49,8 @@ export interface Appointment {
   duration: number;
   price: number;
   status: 'scheduled' | 'completed' | 'cancelled';
+  paymentStatus?: 'pending' | 'paid';
+  products?: { productId: string; quantity: number }[];
   createdAt: string;
 }
 
@@ -67,6 +71,54 @@ export interface BlockedDay {
   reason?: string;
 }
 
+export interface BlockedTime {
+  id: string;
+  professionalId: string;
+  date: string;
+  time: string;
+  reason?: string;
+}
+
+export interface BusinessSettings {
+  scheduleMonthsAhead: 1 | 2 | 3;
+  timeSlotInterval: 30 | 60;
+  inactiveDays: number[]; // 0-6 (Sunday-Saturday)
+  whatsappMessage: string;
+  showProductsInBooking: boolean;
+  businessName: string;
+  businessPhone: string;
+  businessCnpj: string;
+  businessAddress: string;
+}
+
+export const defaultSettings: BusinessSettings = {
+  scheduleMonthsAhead: 1,
+  timeSlotInterval: 30,
+  inactiveDays: [0], // Sunday inactive by default
+  whatsappMessage: `✅ Olá {nome}! Seu agendamento foi confirmado!
+
+📋 *Serviço:* {servico}
+👤 *Profissional:* {profissional}
+📅 *Data:* {data}
+🕐 *Horário:* {horario}
+
+Aguardamos você! 🙏`,
+  showProductsInBooking: true,
+  businessName: 'Corta Fila Barbearia',
+  businessPhone: '(11) 99999-9999',
+  businessCnpj: '12.345.678/0001-00',
+  businessAddress: 'Rua Exemplo, 123 - Centro'
+};
+
+// Service background colors for agenda
+export const serviceColors: Record<ServiceType, string> = {
+  corte: 'bg-info/30 border-info/50',
+  barba: 'bg-warning/30 border-warning/50',
+  combo: 'bg-primary/30 border-primary/50',
+  pigmentacao: 'bg-purple-500/30 border-purple-500/50',
+  hidratacao: 'bg-pink-500/30 border-pink-500/50'
+};
+
 export const services: Service[] = [
   {
     id: '1',
@@ -74,7 +126,8 @@ export const services: Service[] = [
     type: 'corte',
     price: 45,
     duration: 30,
-    description: 'Corte moderno com acabamento perfeito'
+    description: 'Corte moderno com acabamento perfeito',
+    color: 'bg-info/30'
   },
   {
     id: '2',
@@ -82,7 +135,8 @@ export const services: Service[] = [
     type: 'barba',
     price: 35,
     duration: 25,
-    description: 'Barba modelada com toalha quente e produtos premium'
+    description: 'Barba modelada com toalha quente e produtos premium',
+    color: 'bg-warning/30'
   },
   {
     id: '3',
@@ -90,7 +144,8 @@ export const services: Service[] = [
     type: 'combo',
     price: 70,
     duration: 50,
-    description: 'Pacote completo com desconto especial'
+    description: 'Pacote completo com desconto especial',
+    color: 'bg-primary/30'
   },
   {
     id: '4',
@@ -98,7 +153,8 @@ export const services: Service[] = [
     type: 'pigmentacao',
     price: 80,
     duration: 45,
-    description: 'Coloração natural para barba e cabelo'
+    description: 'Coloração natural para barba e cabelo',
+    color: 'bg-purple-500/30'
   },
   {
     id: '5',
@@ -106,7 +162,8 @@ export const services: Service[] = [
     type: 'hidratacao',
     price: 50,
     duration: 40,
-    description: 'Tratamento profundo para fios mais saudáveis'
+    description: 'Tratamento profundo para fios mais saudáveis',
+    color: 'bg-pink-500/30'
   }
 ];
 
@@ -115,6 +172,7 @@ export const professionals: Professional[] = [
     id: '1',
     name: 'Carlos Silva',
     avatar: 'CS',
+    photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
     role: 'Barbeiro Senior',
     phone: '5511999999999',
     email: 'carlos@cortafila.com',
@@ -126,6 +184,7 @@ export const professionals: Professional[] = [
     id: '2',
     name: 'Pedro Santos',
     avatar: 'PS',
+    photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
     role: 'Barbeiro Pleno',
     phone: '5511988888888',
     email: 'pedro@cortafila.com',
@@ -137,6 +196,7 @@ export const professionals: Professional[] = [
     id: '3',
     name: 'Lucas Oliveira',
     avatar: 'LO',
+    photo: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
     role: 'Barbeiro Junior',
     phone: '5511977777777',
     email: 'lucas@cortafila.com',
@@ -196,6 +256,7 @@ const generateAppointments = (): Appointment[] => {
         duration: service.duration,
         price: service.price,
         status: day < 0 ? 'completed' : 'scheduled',
+        paymentStatus: 'pending',
         createdAt: new Date().toISOString()
       });
     }
@@ -230,6 +291,7 @@ const generateAppointments = (): Appointment[] => {
         duration: service.duration,
         price: service.price,
         status: Math.random() > 0.1 ? 'completed' : 'cancelled',
+        paymentStatus: Math.random() > 0.2 ? 'paid' : 'pending',
         createdAt: date.toISOString()
       });
     }
@@ -253,6 +315,7 @@ export const products: Product[] = [
 ];
 
 export const blockedDays: BlockedDay[] = [];
+export const blockedTimes: BlockedTime[] = [];
 
 // Helper functions
 export const getServiceTypeColor = (type: ServiceType): string => {
@@ -264,6 +327,10 @@ export const getServiceTypeColor = (type: ServiceType): string => {
     hidratacao: 'service-hidratacao'
   };
   return colors[type];
+};
+
+export const getServiceBgColor = (type: ServiceType): string => {
+  return serviceColors[type];
 };
 
 export const formatCurrency = (value: number): string => {
@@ -285,4 +352,22 @@ export const getWhatsAppLink = (phone: string, message?: string): string => {
   const cleaned = phone.replace(/\D/g, '');
   const encodedMessage = message ? encodeURIComponent(message) : '';
   return `https://wa.me/${cleaned}${encodedMessage ? `?text=${encodedMessage}` : ''}`;
+};
+
+export const formatWhatsAppMessage = (
+  template: string,
+  data: {
+    nome: string;
+    servico: string;
+    profissional: string;
+    data: string;
+    horario: string;
+  }
+): string => {
+  return template
+    .replace('{nome}', data.nome)
+    .replace('{servico}', data.servico)
+    .replace('{profissional}', data.profissional)
+    .replace('{data}', data.data)
+    .replace('{horario}', data.horario);
 };

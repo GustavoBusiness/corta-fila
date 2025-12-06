@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
-import { formatPhone, getWhatsAppLink } from '@/lib/mock-data';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatPhone } from '@/lib/mock-data';
+import WhatsAppButton from '@/components/WhatsAppButton';
+import ConfirmDialog from '@/components/ConfirmDialog';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,7 +13,6 @@ import { toast } from 'sonner';
 import {
   Plus,
   Search,
-  MessageCircle,
   Pencil,
   Trash2,
   Users
@@ -22,6 +23,7 @@ const AdminClientes = () => {
   const [search, setSearch] = useState('');
   const [showDialog, setShowDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -62,10 +64,11 @@ const AdminClientes = () => {
     setShowDialog(false);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Tem certeza que deseja excluir este cliente?')) {
-      deleteClient(id);
+  const handleDelete = () => {
+    if (deleteConfirm) {
+      deleteClient(deleteConfirm);
       toast.success('Cliente excluído!');
+      setDeleteConfirm(null);
     }
   };
 
@@ -118,14 +121,7 @@ const AdminClientes = () => {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="text-success"
-                    onClick={() => window.open(getWhatsAppLink(client.phone), '_blank')}
-                  >
-                    <MessageCircle className="h-5 w-5" />
-                  </Button>
+                  <WhatsAppButton phone={client.phone} />
                   <Button
                     size="icon"
                     variant="ghost"
@@ -137,7 +133,7 @@ const AdminClientes = () => {
                     size="icon"
                     variant="ghost"
                     className="text-destructive"
-                    onClick={() => handleDelete(client.id)}
+                    onClick={() => setDeleteConfirm(client.id)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -201,6 +197,16 @@ const AdminClientes = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        onOpenChange={(open) => !open && setDeleteConfirm(null)}
+        title="Excluir Cliente"
+        description="Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita."
+        onConfirm={handleDelete}
+        confirmText="Excluir"
+        variant="destructive"
+      />
     </div>
   );
 };

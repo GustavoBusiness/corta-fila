@@ -1,16 +1,37 @@
 import { useTheme } from '@/contexts/ThemeContext';
+import { useApp } from '@/contexts/AppContext';
 import Logo from '@/components/Logo';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Moon, Sun, Bell, Shield, Database } from 'lucide-react';
+import { Moon, Sun, Bell, Shield, Database, Calendar, Clock, MessageSquare } from 'lucide-react';
+
+const weekDays = [
+  { value: 0, label: 'Domingo' },
+  { value: 1, label: 'Segunda' },
+  { value: 2, label: 'Terça' },
+  { value: 3, label: 'Quarta' },
+  { value: 4, label: 'Quinta' },
+  { value: 5, label: 'Sexta' },
+  { value: 6, label: 'Sábado' },
+];
 
 const AdminConfiguracoes = () => {
   const { theme, setTheme } = useTheme();
+  const { settings, updateSettings } = useApp();
+
+  const toggleInactiveDay = (day: number) => {
+    const newDays = settings.inactiveDays.includes(day)
+      ? settings.inactiveDays.filter(d => d !== day)
+      : [...settings.inactiveDays, day];
+    updateSettings({ inactiveDays: newDays });
+  };
 
   return (
     <div className="space-y-6 animate-fade-in max-w-2xl mx-auto">
@@ -38,7 +59,7 @@ const AdminConfiguracoes = () => {
                   : 'border-border hover:border-muted-foreground'
               }`}
             >
-              <div className="h-20 rounded bg-gradient-to-b from-gray-100 to-white mb-2 flex items-center justify-center">
+              <div className="h-20 rounded bg-gradient-to-b from-gray-100 to-white mb-2 flex items-center justify-center border">
                 <Sun className="h-8 w-8 text-yellow-500" />
               </div>
               <p className="font-medium">Claro</p>
@@ -56,6 +77,103 @@ const AdminConfiguracoes = () => {
               </div>
               <p className="font-medium">Escuro</p>
             </button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Agenda Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Configurações da Agenda
+          </CardTitle>
+          <CardDescription>Defina como a agenda será liberada</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Liberar agenda para quantos meses à frente?</Label>
+            <Select 
+              value={settings.scheduleMonthsAhead.toString()} 
+              onValueChange={(v) => updateSettings({ scheduleMonthsAhead: parseInt(v) as 1 | 2 | 3 })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">1 mês</SelectItem>
+                <SelectItem value="2">2 meses</SelectItem>
+                <SelectItem value="3">3 meses</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Separator />
+          <div className="space-y-2">
+            <Label>Intervalo de horários</Label>
+            <Select 
+              value={settings.timeSlotInterval.toString()} 
+              onValueChange={(v) => updateSettings({ timeSlotInterval: parseInt(v) as 30 | 60 })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="30">30 em 30 minutos</SelectItem>
+                <SelectItem value="60">1 em 1 hora</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Separator />
+          <div className="space-y-2">
+            <Label>Dias inativos (não aparecem para clientes)</Label>
+            <div className="flex flex-wrap gap-2">
+              {weekDays.map((day) => (
+                <Button
+                  key={day.value}
+                  size="sm"
+                  variant={settings.inactiveDays.includes(day.value) ? 'destructive' : 'outline'}
+                  onClick={() => toggleInactiveDay(day.value)}
+                >
+                  {day.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <Separator />
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>Mostrar produtos no agendamento</Label>
+              <p className="text-sm text-muted-foreground">Cliente pode adicionar produtos ao agendar</p>
+            </div>
+            <Switch 
+              checked={settings.showProductsInBooking}
+              onCheckedChange={(checked) => updateSettings({ showProductsInBooking: checked })}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* WhatsApp Message */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <MessageSquare className="h-5 w-5" />
+            Mensagem WhatsApp
+          </CardTitle>
+          <CardDescription>Mensagem enviada ao cliente após confirmar agendamento</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Modelo da mensagem</Label>
+            <Textarea
+              rows={6}
+              value={settings.whatsappMessage}
+              onChange={(e) => updateSettings({ whatsappMessage: e.target.value })}
+              placeholder="Use: {nome}, {servico}, {profissional}, {data}, {horario}"
+            />
+            <p className="text-xs text-muted-foreground">
+              Variáveis: {'{nome}'}, {'{servico}'}, {'{profissional}'}, {'{data}'}, {'{horario}'}
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -85,14 +203,6 @@ const AdminConfiguracoes = () => {
             </div>
             <Switch defaultChecked />
           </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>Lembretes automáticos</Label>
-              <p className="text-sm text-muted-foreground">Enviar lembretes para clientes</p>
-            </div>
-            <Switch defaultChecked />
-          </div>
         </CardContent>
       </Card>
 
@@ -108,21 +218,33 @@ const AdminConfiguracoes = () => {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label>Nome do Estabelecimento</Label>
-            <Input defaultValue="Corta Fila Barbearia" />
+            <Input 
+              value={settings.businessName}
+              onChange={(e) => updateSettings({ businessName: e.target.value })}
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Telefone</Label>
-              <Input defaultValue="(11) 99999-9999" />
+              <Input 
+                value={settings.businessPhone}
+                onChange={(e) => updateSettings({ businessPhone: e.target.value })}
+              />
             </div>
             <div className="space-y-2">
               <Label>CNPJ</Label>
-              <Input defaultValue="12.345.678/0001-00" />
+              <Input 
+                value={settings.businessCnpj}
+                onChange={(e) => updateSettings({ businessCnpj: e.target.value })}
+              />
             </div>
           </div>
           <div className="space-y-2">
             <Label>Endereço</Label>
-            <Input defaultValue="Rua Exemplo, 123 - Centro" />
+            <Input 
+              value={settings.businessAddress}
+              onChange={(e) => updateSettings({ businessAddress: e.target.value })}
+            />
           </div>
           <Button onClick={() => toast.success('Dados salvos!')}>
             Salvar Alterações
@@ -137,7 +259,6 @@ const AdminConfiguracoes = () => {
             <Database className="h-5 w-5" />
             Sistema
           </CardTitle>
-          <CardDescription>Informações técnicas</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
@@ -145,18 +266,12 @@ const AdminConfiguracoes = () => {
             <span className="font-mono">1.0.0</span>
           </div>
           <Separator />
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Última atualização</span>
-            <span className="font-mono">{new Date().toLocaleDateString('pt-BR')}</span>
-          </div>
-          <Separator />
           <div className="pt-2">
             <div className="flex justify-center mb-4">
               <Logo size="md" />
             </div>
             <p className="text-center text-sm text-muted-foreground">
-              Sistema de Agendamento Corta Fila<br />
-              Desenvolvido com ❤️
+              Sistema de Agendamento Corta Fila
             </p>
           </div>
         </CardContent>
