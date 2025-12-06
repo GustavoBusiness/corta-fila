@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { useApp } from '@/contexts/AppContext';
-import { formatCurrency, getWhatsAppLink } from '@/lib/mock-data';
+import { formatCurrency, getWhatsAppLink, getServiceBgColor } from '@/lib/mock-data';
 import ServiceTag from '@/components/ServiceTag';
+import WhatsAppButton from '@/components/WhatsAppButton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -12,9 +12,7 @@ import {
   DollarSign,
   TrendingUp,
   Clock,
-  MessageCircle,
-  CheckCircle,
-  XCircle
+  CheckCircle
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -42,6 +40,12 @@ const AdminDashboard = () => {
         ? completedMonth.reduce((sum, a) => sum + a.price, 0) / completedMonth.length 
         : 0
     };
+  }, [appointments, today]);
+
+  const todaySchedule = useMemo(() => {
+    return appointments
+      .filter(a => a.date === today && a.status === 'scheduled')
+      .sort((a, b) => a.time.localeCompare(b.time));
   }, [appointments, today]);
 
   const upcomingAppointments = useMemo(() => {
@@ -128,6 +132,51 @@ const AdminDashboard = () => {
         </Card>
       </div>
 
+      {/* Today's Schedule - Focus on hours */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Horários de Hoje
+            <Badge variant="secondary" className="ml-auto">{todaySchedule.length} agendamentos</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ScrollArea className="h-[350px] pr-4">
+            <div className="space-y-2">
+              {todaySchedule.map((apt, index) => (
+                <div
+                  key={apt.id}
+                  className={`flex items-center gap-3 p-3 rounded-lg border ${getServiceBgColor(apt.serviceType)} animate-fade-in`}
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  <div className="text-center min-w-[60px]">
+                    <p className="text-lg font-bold">{apt.time}</p>
+                    <p className="text-xs text-muted-foreground">{apt.duration}min</p>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-medium truncate">{apt.clientName}</p>
+                      <ServiceTag type={apt.serviceType} />
+                    </div>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {apt.serviceName} • {apt.professionalName}
+                    </p>
+                  </div>
+                  <WhatsAppButton phone={apt.clientPhone} />
+                </div>
+              ))}
+              {todaySchedule.length === 0 && (
+                <div className="text-center py-8">
+                  <Calendar className="h-12 w-12 mx-auto text-muted-foreground/50 mb-2" />
+                  <p className="text-muted-foreground">Nenhum agendamento para hoje</p>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </CardContent>
+      </Card>
+
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Próximos Agendamentos */}
         <Card className="lg:col-span-2">
@@ -138,12 +187,12 @@ const AdminDashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-[400px] pr-4">
+            <ScrollArea className="h-[300px] pr-4">
               <div className="space-y-3">
                 {upcomingAppointments.map((apt, index) => (
                   <div
                     key={apt.id}
-                    className="flex items-center gap-4 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors animate-fade-in"
+                    className={`flex items-center gap-4 p-3 rounded-lg border ${getServiceBgColor(apt.serviceType)} animate-fade-in`}
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
                     <div className="flex-1 min-w-0">
@@ -158,14 +207,7 @@ const AdminDashboard = () => {
                         {new Date(apt.date).toLocaleDateString('pt-BR')} às {apt.time}
                       </p>
                     </div>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="shrink-0 text-success hover:text-success hover:bg-success/10"
-                      onClick={() => window.open(getWhatsAppLink(apt.clientPhone), '_blank')}
-                    >
-                      <MessageCircle className="h-5 w-5" />
-                    </Button>
+                    <WhatsAppButton phone={apt.clientPhone} />
                   </div>
                 ))}
                 {upcomingAppointments.length === 0 && (

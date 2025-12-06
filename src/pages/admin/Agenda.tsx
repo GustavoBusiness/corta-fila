@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useApp } from '@/contexts/AppContext';
-import { formatCurrency, getWhatsAppLink, ServiceType, Professional, Appointment } from '@/lib/mock-data';
+import { formatCurrency, getWhatsAppLink, ServiceType, getServiceBgColor } from '@/lib/mock-data';
 import ServiceTag from '@/components/ServiceTag';
+import WhatsAppButton from '@/components/WhatsAppButton';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +18,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
-  MessageCircle,
   X,
   Clock,
   Ban
@@ -51,6 +52,10 @@ const AdminAgenda = () => {
   const [newProfessionalId, setNewProfessionalId] = useState('');
   const [blockProfessionalId, setBlockProfessionalId] = useState('');
   const [blockReason, setBlockReason] = useState('');
+  
+  // Confirm delete state
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [appointmentToDelete, setAppointmentToDelete] = useState<string | null>(null);
 
   const timeSlots = useMemo(() => {
     const slots = [];
@@ -195,8 +200,17 @@ const AdminAgenda = () => {
   };
 
   const handleCancelAppointment = (id: string) => {
-    updateAppointment(id, { status: 'cancelled' });
-    toast.success('Agendamento cancelado');
+    setAppointmentToDelete(id);
+    setShowConfirmDelete(true);
+  };
+
+  const confirmCancelAppointment = () => {
+    if (appointmentToDelete) {
+      updateAppointment(appointmentToDelete, { status: 'cancelled' });
+      toast.success('Agendamento cancelado');
+      setAppointmentToDelete(null);
+      setShowConfirmDelete(false);
+    }
   };
 
   return (
@@ -257,7 +271,7 @@ const AdminAgenda = () => {
                         {slotAppointments.map((apt) => (
                           <div
                             key={apt.id}
-                            className="flex-1 min-w-[200px] max-w-md p-3 rounded-lg bg-card border border-border group"
+                            className={`flex-1 min-w-[200px] max-w-md p-3 rounded-lg border group ${getServiceBgColor(apt.serviceType)}`}
                             onClick={(e) => e.stopPropagation()}
                           >
                             <div className="flex items-start justify-between">
@@ -274,18 +288,11 @@ const AdminAgenda = () => {
                                 </p>
                               </div>
                               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <WhatsAppButton phone={apt.clientPhone} size="sm" />
                                 <Button
                                   size="icon"
                                   variant="ghost"
-                                  className="h-8 w-8 text-success"
-                                  onClick={() => window.open(getWhatsAppLink(apt.clientPhone), '_blank')}
-                                >
-                                  <MessageCircle className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-8 w-8 text-destructive"
+                                  className="h-8 w-8 text-destructive hover:bg-destructive/10"
                                   onClick={() => handleCancelAppointment(apt.id)}
                                 >
                                   <X className="h-4 w-4" />
@@ -345,7 +352,7 @@ const AdminAgenda = () => {
                           {dayApts.slice(0, 5).map((apt) => (
                             <div
                               key={apt.id}
-                              className="p-2 rounded bg-card border border-border text-xs"
+                              className={`p-2 rounded border text-xs ${getServiceBgColor(apt.serviceType)}`}
                               onClick={(e) => e.stopPropagation()}
                             >
                               <p className="font-medium truncate">{apt.time}</p>
@@ -410,7 +417,7 @@ const AdminAgenda = () => {
                         {dayApts.slice(0, 2).map((apt) => (
                           <div
                             key={apt.id}
-                            className="text-xs p-1 rounded bg-primary/10 truncate"
+                            className={`text-xs p-1 rounded truncate ${getServiceBgColor(apt.serviceType)}`}
                           >
                             {apt.time} - {apt.clientName}
                           </div>
@@ -530,6 +537,7 @@ const AdminAgenda = () => {
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
+                className="dark:[color-scheme:dark]"
               />
             </div>
             <div className="space-y-2">
@@ -564,6 +572,17 @@ const AdminAgenda = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        open={showConfirmDelete}
+        onOpenChange={setShowConfirmDelete}
+        title="Cancelar Agendamento"
+        description="Tem certeza que deseja cancelar este agendamento? Esta ação não pode ser desfeita."
+        onConfirm={confirmCancelAppointment}
+        confirmText="Cancelar Agendamento"
+        variant="destructive"
+      />
     </div>
   );
 };
