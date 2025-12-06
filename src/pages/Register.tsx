@@ -9,11 +9,13 @@ import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Building2, Mail, Phone, MapPin, Lock, ArrowRight, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface CompanyFormData {
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
+interface RegisterFormData {
+  companyName: string;
+  companyAddress: string;
+
+  userName: string;
+  userEmail: string;
+  userPhone: string;
   password: string;
   confirmPassword: string;
 }
@@ -25,43 +27,36 @@ const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<'form' | 'success'>('form');
 
-  const [formData, setFormData] = useState<CompanyFormData>({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
+  const [formData, setFormData] = useState<RegisterFormData>({
+    companyName: '',
+    companyAddress: '',
+    userName: '',
+    userEmail: '',
+    userPhone: '',
     password: '',
     confirmPassword: ''
   });
 
-  const [errors, setErrors] = useState<Partial<CompanyFormData>>({});
+  const [errors, setErrors] = useState<Partial<RegisterFormData>>({});
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<CompanyFormData> = {};
+    const newErrors: Partial<RegisterFormData> = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = 'Nome da empresa é obrigatório';
+    if (!formData.companyName.trim()) newErrors.companyName = 'Nome da empresa é obrigatório';
+    if (!formData.companyAddress.trim()) newErrors.companyAddress = 'Endereço é obrigatório';
+
+    if (!formData.userName.trim()) newErrors.userName = 'Nome do usuário é obrigatório';
+
+    if (!formData.userEmail.trim()) {
+      newErrors.userEmail = 'E-mail é obrigatório';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.userEmail)) {
+      newErrors.userEmail = 'E-mail inválido';
     }
 
-    if (!formData.email.trim()) {
-      newErrors.email = 'E-mail é obrigatório';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'E-mail inválido';
-    }
+    if (!formData.userPhone.trim()) newErrors.userPhone = 'Telefone é obrigatório';
 
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Telefone é obrigatório';
-    }
-
-    if (!formData.address.trim()) {
-      newErrors.address = 'Endereço é obrigatório';
-    }
-
-    if (!formData.password) {
-      newErrors.password = 'Senha é obrigatória';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Senha deve ter pelo menos 6 caracteres';
-    }
+    if (!formData.password) newErrors.password = 'Senha é obrigatória';
+    else if (formData.password.length < 6) newErrors.password = 'Mínimo 6 caracteres';
 
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Senhas não conferem';
@@ -71,34 +66,56 @@ const Register = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleInputChange = (field: keyof CompanyFormData, value: string) => {
+  const handleInputChange = (field: keyof RegisterFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
-    }
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: undefined }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!validateForm()) return;
 
     setIsLoading(true);
 
-    // Simulating API call - ready for backend integration
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    const payload = {
+      company: {
+        name: formData.companyName,
+        address: formData.companyAddress
+      },
+      user: {
+        name: formData.userName,
+        email: formData.userEmail,
+        phone: formData.userPhone,
+        password: formData.password
+      }
+    };
 
-    // TODO: Replace with actual API call
-    // const response = await api.registerCompany(formData);
+    try {
+      const res = await fetch('http://localhost:80/CortaFila_Back/public/company/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
 
-    setIsLoading(false);
-    setStep('success');
-    toast.success('Empresa cadastrada com sucesso!');
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.error || 'Erro ao cadastrar empresa');
+        setIsLoading(false);
+        return;
+      }
+
+      toast.success('Cadastro realizado com sucesso');
+      setStep('success');
+
+    } catch (err) {
+      toast.error('Erro de conexão com o servidor');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleGoToLogin = () => {
-    navigate('/login');
-  };
+  const handleGoToLogin = () => navigate('/login');
 
   if (step === 'success') {
     return (
@@ -112,14 +129,9 @@ const Register = () => {
             <div className="mx-auto w-20 h-20 rounded-full bg-success/20 flex items-center justify-center">
               <CheckCircle className="h-10 w-10 text-success" />
             </div>
-            <div>
-              <h2 className="text-2xl font-bold mb-2">Cadastro Realizado!</h2>
-              <p className="text-muted-foreground">
-                Sua empresa <span className="font-semibold text-foreground">{formData.name}</span> foi cadastrada com sucesso.
-              </p>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Agora você pode fazer login e começar a usar o sistema.
+            <h2 className="text-2xl font-bold mb-2">Cadastro Realizado!</h2>
+            <p className="text-muted-foreground">
+              Sua empresa <span className="font-semibold">{formData.companyName}</span> foi cadastrada.
             </p>
             <Button onClick={handleGoToLogin} className="w-full gap-2">
               Ir para Login
@@ -144,9 +156,7 @@ const Register = () => {
           </div>
           <div className="text-center">
             <h1 className="text-2xl font-bold">Cadastre sua Empresa</h1>
-            <p className="text-muted-foreground">
-              Comece a gerenciar seus agendamentos
-            </p>
+            <p className="text-muted-foreground">Comece a gerenciar seus agendamentos</p>
           </div>
         </div>
 
@@ -156,91 +166,86 @@ const Register = () => {
               <Building2 className="h-5 w-5 text-primary" />
               Dados da Empresa
             </CardTitle>
-            <CardDescription>
-              Preencha as informações abaixo para criar sua conta
-            </CardDescription>
           </CardHeader>
+
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+
+              {/* COMPANY */}
               <div className="space-y-2">
-                <Label htmlFor="name">Nome da Empresa</Label>
-                <div className="relative">
-                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="name"
-                    placeholder="Nome da sua empresa"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                    className={`pl-10 bg-secondary/50 ${errors.name ? 'border-destructive' : ''}`}
-                  />
-                </div>
-                {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+                <Label>Nome da Empresa</Label>
+                <Input
+                  placeholder="Ex: Barbearia do Zé"
+                  value={formData.companyName}
+                  onChange={(e) => handleInputChange('companyName', e.target.value)}
+                  className={errors.companyName ? 'border-destructive' : ''}
+                />
+                {errors.companyName && <p className="text-xs text-destructive">{errors.companyName}</p>}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">E-mail</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="empresa@email.com"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    className={`pl-10 bg-secondary/50 ${errors.email ? 'border-destructive' : ''}`}
-                  />
-                </div>
-                {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
+                <Label>Endereço</Label>
+                <Input
+                  placeholder="Rua, número, bairro..."
+                  value={formData.companyAddress}
+                  onChange={(e) => handleInputChange('companyAddress', e.target.value)}
+                  className={errors.companyAddress ? 'border-destructive' : ''}
+                />
+                {errors.companyAddress && <p className="text-xs text-destructive">{errors.companyAddress}</p>}
+              </div>
+
+              {/* USER */}
+              <div className="space-y-2">
+                <Label>Seu Nome</Label>
+                <Input
+                  placeholder="Seu nome"
+                  value={formData.userName}
+                  onChange={(e) => handleInputChange('userName', e.target.value)}
+                  className={errors.userName ? 'border-destructive' : ''}
+                />
+                {errors.userName && <p className="text-xs text-destructive">{errors.userName}</p>}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">Telefone</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="phone"
-                    placeholder="(11) 99999-9999"
-                    value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    className={`pl-10 bg-secondary/50 ${errors.phone ? 'border-destructive' : ''}`}
-                  />
-                </div>
-                {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
+                <Label>E-mail</Label>
+                <Input
+                  type="email"
+                  placeholder="voce@email.com"
+                  value={formData.userEmail}
+                  onChange={(e) => handleInputChange('userEmail', e.target.value)}
+                  className={errors.userEmail ? 'border-destructive' : ''}
+                />
+                {errors.userEmail && <p className="text-xs text-destructive">{errors.userEmail}</p>}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="address">Endereço</Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="address"
-                    placeholder="Rua, número, bairro, cidade"
-                    value={formData.address}
-                    onChange={(e) => handleInputChange('address', e.target.value)}
-                    className={`pl-10 bg-secondary/50 ${errors.address ? 'border-destructive' : ''}`}
-                  />
-                </div>
-                {errors.address && <p className="text-xs text-destructive">{errors.address}</p>}
+                <Label>Telefone</Label>
+                <Input
+                  placeholder="(11) 99999-9999"
+                  value={formData.userPhone}
+                  onChange={(e) => handleInputChange('userPhone', e.target.value)}
+                  className={errors.userPhone ? 'border-destructive' : ''}
+                />
+                {errors.userPhone && <p className="text-xs text-destructive">{errors.userPhone}</p>}
               </div>
 
+              {/* PASSWORD */}
               <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
+                <Label>Senha</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    id="password"
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     value={formData.password}
                     onChange={(e) => handleInputChange('password', e.target.value)}
-                    className={`pl-10 pr-10 bg-secondary/50 ${errors.password ? 'border-destructive' : ''}`}
+                    className={`pr-10 ${errors.password ? 'border-destructive' : ''}`}
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="absolute right-0 top-0 h-full px-3"
                     onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-0 top-0 h-full px-3"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
@@ -249,23 +254,21 @@ const Register = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirmar Senha</Label>
+                <Label>Confirmar Senha</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    id="confirmPassword"
                     type={showConfirmPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     value={formData.confirmPassword}
                     onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                    className={`pl-10 pr-10 bg-secondary/50 ${errors.confirmPassword ? 'border-destructive' : ''}`}
+                    className={`pr-10 ${errors.confirmPassword ? 'border-destructive' : ''}`}
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="absolute right-0 top-0 h-full px-3"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-0 top-0 h-full px-3"
                   >
                     {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
@@ -273,27 +276,16 @@ const Register = () => {
                 {errors.confirmPassword && <p className="text-xs text-destructive">{errors.confirmPassword}</p>}
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <span className="animate-spin mr-2">⏳</span>
-                    Cadastrando...
-                  </>
-                ) : (
-                  'Cadastrar Empresa'
-                )}
+              <Button type="submit" disabled={isLoading} className="w-full">
+                {isLoading ? 'Cadastrando...' : 'Cadastrar Empresa'}
               </Button>
             </form>
           </CardContent>
         </Card>
 
         <p className="text-center text-sm text-muted-foreground">
-          Já tem uma conta?{' '}
-          <Button
-            variant="link"
-            className="p-0 h-auto text-primary"
-            onClick={() => navigate('/login')}
-          >
+          Já tem conta?{' '}
+          <Button variant="link" className="p-0 h-auto text-primary" onClick={() => navigate('/login')}>
             Faça login
           </Button>
         </p>
