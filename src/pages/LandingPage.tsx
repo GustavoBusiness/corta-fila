@@ -127,10 +127,11 @@ const LandingPage = () => {
             <Zap className="h-4 w-4" />
             Sistema de Agendamento Profissional
           </div>
-          <h1 className="text-4xl lg:text-6xl font-bold mb-6 animate-slide-up">
-            Gerencie sua agenda<br />
-            <span className="text-gradient">sem complicação</span>
-          </h1>
+            <h1 className="text-4xl lg:text-6xl font-bold mb-6 animate-slide-up">
+            Gerencie sua agenda
+            <br />
+            sem complicação
+            </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-slide-up" style={{ animationDelay: '100ms' }}>
             O sistema completo para barbearias, salões e profissionais de beleza. 
             Agendamento online, gestão de equipe e relatórios financeiros em um só lugar.
@@ -181,7 +182,7 @@ const LandingPage = () => {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl lg:text-4xl font-bold mb-6">
-                Por que escolher o <span className="text-gradient">Corta Fila</span>?
+                Por que escolher o Corta Fila
               </h2>
               <p className="text-lg text-muted-foreground mb-8">
                 Desenvolvido por quem entende as necessidades do seu negócio. 

@@ -25,7 +25,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import {
@@ -37,10 +36,11 @@ import {
   Calendar,
   MessageCircle,
   Package,
-  ShoppingBag
+  ShoppingBag,
+  ChevronRight
 } from 'lucide-react';
 
-type Step = 'services' | 'calendar' | 'professional' | 'time' | 'products' | 'confirm';
+type Step = 'services' | 'calendar' | 'professional' | 'time' | 'confirm';
 
 // Máscara de telefone
 const formatPhone = (value: string) => {
@@ -65,40 +65,64 @@ const ClientBooking = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showMyAppointments, setShowMyAppointments] = useState(false);
   const [searchPhone, setSearchPhone] = useState('');
+  const [showProductsModal, setShowProductsModal] = useState(false);
+  const [currentCalendarMonth, setCurrentCalendarMonth] = useState(new Date());
 
-  // TODO Backend: Buscar dias disponíveis baseado nas configurações do admin
-  const availableDates = useMemo(() => {
-    const dates: Date[] = [];
+  // Gera os dias do mês atual
+  const calendarDays = useMemo(() => {
+    const year = currentCalendarMonth.getFullYear();
+    const month = currentCalendarMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+    
+    const days = [];
+    
+    // Dias vazios do mês anterior
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push(null);
+    }
+    
+    // Dias do mês atual
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push(new Date(year, month, day));
+    }
+    
+    return days;
+  }, [currentCalendarMonth]);
+
+  // Verifica quais dias estão disponíveis
+  const isDateAvailable = (date: Date) => {
+    if (!selectedService) return false;
+    
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    // Usa configuração do admin para quantidade de meses
-    const daysAhead = settings.scheduleMonthsAhead * 30;
+    // Não permite datas passadas
+    if (date < today) return false;
     
-    for (let i = 0; i < daysAhead; i++) {
-      const date = new Date(today);
-      date.setDate(date.getDate() + i);
-      
-      const dayOfWeek = date.getDay();
-      const dateStr = date.toISOString().split('T')[0];
-      
-      // Verifica se o dia está inativo nas configurações
-      if (settings.inactiveDays.includes(dayOfWeek)) continue;
-      
-      // Verifica se há profissional disponível
-      const hasAvailableProfessional = professionals.some(prof => {
-        const isWorkDay = prof.workDays.includes(dayOfWeek);
-        const isBlocked = blockedDays.some(b => b.date === dateStr && b.professionalId === prof.id);
-        return isWorkDay && !isBlocked;
-      });
-      
-      if (hasAvailableProfessional) {
-        dates.push(date);
-      }
-    }
+    // Verifica se ultrapassa o limite configurado pelo admin
+    const maxDate = new Date();
+    maxDate.setMonth(maxDate.getMonth() + settings.scheduleMonthsAhead);
+    if (date > maxDate) return false;
     
-    return dates;
-  }, [professionals, blockedDays, settings.scheduleMonthsAhead, settings.inactiveDays]);
+    const dayOfWeek = date.getDay();
+    const dateStr = date.toISOString().split('T')[0];
+    
+    // Verifica se o dia está inativo nas configurações
+    if (settings.inactiveDays.includes(dayOfWeek)) return false;
+    
+    // Verifica se há profissional disponível que oferece o serviço
+    const hasAvailableProfessional = professionals.some(prof => {
+      const offersService = prof.services.includes(selectedService.id);
+      const isWorkDay = prof.workDays.includes(dayOfWeek);
+      const isBlocked = blockedDays.some(b => b.date === dateStr && b.professionalId === prof.id);
+      return offersService && isWorkDay && !isBlocked;
+    });
+    
+    return hasAvailableProfessional;
+  };
 
   // TODO Backend: Buscar profissionais disponíveis do banco
   const availableProfessionals = useMemo(() => {
@@ -128,7 +152,6 @@ const ClientBooking = () => {
     const [startH] = selectedProfessional.workHours.start.split(':').map(Number);
     const [endH] = selectedProfessional.workHours.end.split(':').map(Number);
     
-    // Usa intervalo configurado pelo admin
     const interval = settings.timeSlotInterval;
     
     for (let h = startH; h < endH; h++) {
@@ -170,6 +193,7 @@ const ClientBooking = () => {
 
   const handleSelectService = (service: typeof services[0]) => {
     setSelectedService(service);
+    setCurrentCalendarMonth(new Date());
     setStep('calendar');
   };
 
@@ -185,15 +209,6 @@ const ClientBooking = () => {
 
   const handleSelectTime = (time: string) => {
     setSelectedTime(time);
-    // Se admin habilitou produtos, mostra tela de produtos
-    if (settings.showProductsInBooking && products.length > 0) {
-      setStep('products');
-    } else {
-      setStep('confirm');
-    }
-  };
-
-  const handleSkipProducts = () => {
     setStep('confirm');
   };
 
@@ -284,14 +299,7 @@ const ClientBooking = () => {
       case 'calendar': setStep('services'); break;
       case 'professional': setStep('calendar'); break;
       case 'time': setStep('professional'); break;
-      case 'products': setStep('time'); break;
-      case 'confirm': 
-        if (settings.showProductsInBooking && products.length > 0) {
-          setStep('products');
-        } else {
-          setStep('time');
-        }
-        break;
+      case 'confirm': setStep('time'); break;
     }
   };
 
@@ -309,6 +317,24 @@ const ClientBooking = () => {
 
   const getDayName = (date: Date) => {
     return date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
+  };
+
+  const getMonthYear = (date: Date) => {
+    return date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  };
+
+  const canNavigateNext = () => {
+    const maxDate = new Date();
+    maxDate.setMonth(maxDate.getMonth() + settings.scheduleMonthsAhead);
+    const nextMonth = new Date(currentCalendarMonth);
+    nextMonth.setMonth(nextMonth.getMonth() + 1, 1);
+    return nextMonth <= maxDate;
+  };
+
+  const canNavigatePrev = () => {
+    const today = new Date();
+    today.setDate(1);
+    return currentCalendarMonth > today;
   };
 
   return (
@@ -395,11 +421,8 @@ const ClientBooking = () => {
           <>
             {/* Progress */}
             <div className="flex items-center justify-center gap-2 mb-6">
-              {(['services', 'calendar', 'professional', 'time', 'products', 'confirm'] as Step[]).map((s, idx) => {
-                if (s === 'products' && (!settings.showProductsInBooking || products.length === 0)) return null;
-                const steps = ['services', 'calendar', 'professional', 'time'];
-                if (settings.showProductsInBooking && products.length > 0) steps.push('products');
-                steps.push('confirm');
+              {(['services', 'calendar', 'professional', 'time', 'confirm'] as Step[]).map((s) => {
+                const steps = ['services', 'calendar', 'professional', 'time', 'confirm'];
                 const currentIdx = steps.indexOf(step);
                 const stepIdx = steps.indexOf(s);
                 return (
@@ -457,7 +480,7 @@ const ClientBooking = () => {
               </div>
             )}
 
-            {/* Step: Calendar - Layout horizontal com blocos de data */}
+            {/* Step: Calendar - Mês completo com navegação */}
             {step === 'calendar' && (
               <div className="space-y-4 animate-fade-in">
                 <div className="text-center mb-6">
@@ -465,25 +488,77 @@ const ClientBooking = () => {
                   <p className="text-muted-foreground">Dias disponíveis para agendamento</p>
                 </div>
                 
-                <ScrollArea className="w-full">
-                  <div className="flex gap-3 pb-4">
-                    {availableDates.slice(0, 21).map((date, idx) => (
+                {/* Calendar Navigation */}
+                <div className="flex items-center justify-between mb-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentCalendarMonth(new Date(currentCalendarMonth.getFullYear(), currentCalendarMonth.getMonth() - 1))}
+                    disabled={!canNavigatePrev()}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <h2 className="text-lg font-semibold capitalize">
+                    {getMonthYear(currentCalendarMonth)}
+                  </h2>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentCalendarMonth(new Date(currentCalendarMonth.getFullYear(), currentCalendarMonth.getMonth() + 1))}
+                    disabled={!canNavigateNext()}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Weekday headers */}
+                <div className="grid grid-cols-7 gap-2 mb-2">
+                  {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'].map(day => (
+                    <div key={day} className="text-center text-xs font-semibold text-muted-foreground">
+                      {day}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Calendar days */}
+                <div className="grid grid-cols-7 gap-2">
+                  {calendarDays.map((date, idx) => {
+                    if (!date) {
+                      return <div key={`empty-${idx}`} />;
+                    }
+
+                    const available = isDateAvailable(date);
+                    const isSelected = selectedDate?.toDateString() === date.toDateString();
+
+                    return (
                       <button
                         key={date.toISOString()}
-                        onClick={() => handleSelectDate(date)}
-                        className="flex flex-col items-center justify-center min-w-[70px] h-20 rounded-xl border border-border bg-card hover:border-primary hover:bg-primary/10 transition-all animate-scale-in"
-                        style={{ animationDelay: `${idx * 30}ms` }}
+                        onClick={() => available && handleSelectDate(date)}
+                        disabled={!available}
+                        className={`
+                          aspect-square rounded-lg border transition-all text-sm font-medium
+                          animate-scale-in
+                          ${isSelected 
+                            ? 'border-primary bg-primary text-primary-foreground' 
+                            : available 
+                              ? 'border-border bg-card hover:border-primary hover:bg-primary/10 cursor-pointer' 
+                              : 'border-border bg-muted text-muted-foreground cursor-not-allowed opacity-50'
+                          }
+                        `}
+                        style={{ animationDelay: `${idx * 20}ms` }}
                       >
-                        <span className="text-lg font-bold">
-                          {date.getDate()}/{date.getMonth() + 1}
-                        </span>
-                        <span className="text-xs text-muted-foreground capitalize">
-                          {getDayName(date)}
-                        </span>
+                        {date.getDate()}
                       </button>
-                    ))}
-                  </div>
-                </ScrollArea>
+                    );
+                  })}
+                </div>
+
+                {/* Info about unavailable dates */}
+                <div className="mt-6 p-4 bg-secondary/50 rounded-lg text-xs text-muted-foreground space-y-1">
+                  <p>• Datas cinzas estão indisponíveis</p>
+                  <p>• Apenas dias configurados pelo estabelecimento aparecem</p>
+                  <p>• Máximo {settings.scheduleMonthsAhead} {settings.scheduleMonthsAhead === 1 ? 'mês' : 'meses'} à frente</p>
+                </div>
               </div>
             )}
 
@@ -498,7 +573,7 @@ const ClientBooking = () => {
                 </div>
                 
                 <ScrollArea className="w-full">
-                  <div className="flex gap-4 pb-4">
+                  <div className="flex flex-wrap gap-4 pb-4 justify-center">
                     {availableProfessionals.map((prof, idx) => (
                       <button
                         key={prof.id}
@@ -506,7 +581,6 @@ const ClientBooking = () => {
                         className="flex flex-col items-center min-w-[100px] p-4 rounded-xl border border-border bg-card hover:border-primary hover:bg-primary/10 transition-all animate-scale-in"
                         style={{ animationDelay: `${idx * 50}ms` }}
                       >
-                        {/* TODO Backend: Carregar foto do profissional do storage */}
                         {prof.photo ? (
                           <img 
                             src={prof.photo} 
@@ -559,58 +633,6 @@ const ClientBooking = () => {
                     ))}
                   </div>
                 </ScrollArea>
-              </div>
-            )}
-
-            {/* Step: Products */}
-            {step === 'products' && (
-              <div className="space-y-4 animate-fade-in">
-                <div className="text-center mb-6">
-                  <h1 className="text-2xl font-bold">Adicionar produtos?</h1>
-                  <p className="text-muted-foreground">Selecione produtos para seu atendimento</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  {products.filter(p => p.stock > 0).map((product, idx) => (
-                    <Card
-                      key={product.id}
-                      className={`cursor-pointer transition-all animate-scale-in ${
-                        selectedProducts.includes(product.id) ? 'border-primary bg-primary/10' : ''
-                      }`}
-                      style={{ animationDelay: `${idx * 50}ms` }}
-                      onClick={() => toggleProduct(product.id)}
-                    >
-                      <CardContent className="p-3">
-                        {/* TODO Backend: Carregar foto do produto do storage */}
-                        <div className="aspect-square rounded-lg bg-muted mb-2 flex items-center justify-center overflow-hidden">
-                          {product.image ? (
-                            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <Package className="h-8 w-8 text-muted-foreground" />
-                          )}
-                        </div>
-                        <h4 className="font-semibold text-sm truncate">{product.name}</h4>
-                        <p className="text-primary font-bold">{formatCurrency(product.price)}</p>
-                        {selectedProducts.includes(product.id) && (
-                          <Badge className="mt-2 w-full justify-center">
-                            <Check className="h-3 w-3 mr-1" />
-                            Selecionado
-                          </Badge>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-
-                <div className="flex gap-2 pt-4">
-                  <Button variant="outline" className="flex-1" onClick={handleSkipProducts}>
-                    Pular
-                  </Button>
-                  <Button className="flex-1" onClick={() => setStep('confirm')}>
-                    Continuar
-                    {selectedProducts.length > 0 && ` (${selectedProducts.length})`}
-                  </Button>
-                </div>
               </div>
             )}
 
@@ -699,14 +721,74 @@ const ClientBooking = () => {
                   </div>
                 </div>
 
-                <Button className="w-full h-12 text-lg" onClick={handleConfirm}>
-                  Confirmar Agendamento
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 gap-2" 
+                    onClick={() => setShowProductsModal(true)}
+                    disabled={products.filter(p => p.stock > 0).length === 0}
+                  >
+                    <Package className="h-4 w-4" />
+                    Ver produtos
+                  </Button>
+                  <Button className="flex-1" onClick={handleConfirm}>
+                    Confirmar Agendamento
+                  </Button>
+                </div>
               </div>
             )}
           </>
         )}
       </main>
+
+      {/* Products Modal */}
+      <Dialog open={showProductsModal} onOpenChange={setShowProductsModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Adicionar produtos</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+            {products.filter(p => p.stock > 0).length > 0 ? (
+              <div className="grid grid-cols-2 gap-3">
+                {products.filter(p => p.stock > 0).map((product) => (
+                  <Card
+                    key={product.id}
+                    className={`cursor-pointer transition-all ${
+                      selectedProducts.includes(product.id) ? 'border-primary bg-primary/10' : ''
+                    }`}
+                    onClick={() => toggleProduct(product.id)}
+                  >
+                    <CardContent className="p-3">
+                      <div className="aspect-square rounded-lg bg-muted mb-2 flex items-center justify-center overflow-hidden">
+                        {product.image ? (
+                          <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <Package className="h-8 w-8 text-muted-foreground" />
+                        )}
+                      </div>
+                      <h4 className="font-semibold text-sm truncate">{product.name}</h4>
+                      <p className="text-primary font-bold text-sm">{formatCurrency(product.price)}</p>
+                      {selectedProducts.includes(product.id) && (
+                        <Badge className="mt-2 w-full justify-center">
+                          <Check className="h-3 w-3 mr-1" />
+                          Selecionado
+                        </Badge>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">
+                Nenhum produto disponível
+              </p>
+            )}
+          </div>
+          <Button onClick={() => setShowProductsModal(false)} className="w-full">
+            Fechar
+          </Button>
+        </DialogContent>
+      </Dialog>
 
       {/* Success Dialog */}
       <Dialog open={showSuccess} onOpenChange={setShowSuccess}>
