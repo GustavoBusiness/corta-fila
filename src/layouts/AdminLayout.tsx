@@ -126,7 +126,7 @@ const AdminLayout = () => {
         {/* Desktop Header */}
         <header className="hidden lg:flex sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur">
           <div className="flex items-center justify-between p-4 w-full">
-            <div />
+            <Logo size="sm" />
             <ThemeToggle />
           </div>
         </header>

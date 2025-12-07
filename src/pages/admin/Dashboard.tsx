@@ -73,8 +73,8 @@ const AdminDashboard = () => {
         <p className="text-muted-foreground">Visão geral do seu negócio</p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats Cards - Apenas agendamentos */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -96,22 +96,8 @@ const AdminDashboard = () => {
                 <CheckCircle className="h-5 w-5 text-success" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{stats.monthTotal}</p>
-                <p className="text-xs text-muted-foreground">Este mês</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-warning/10 flex items-center justify-center">
-                <DollarSign className="h-5 w-5 text-warning" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{formatCurrency(stats.monthRevenue)}</p>
-                <p className="text-xs text-muted-foreground">Faturamento mês</p>
+                <p className="text-2xl font-bold">{stats.todayCompleted}</p>
+                <p className="text-xs text-muted-foreground">Concluídos hoje</p>
               </div>
             </div>
           </CardContent>
@@ -121,11 +107,11 @@ const AdminDashboard = () => {
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-info/10 flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-info" />
+                <Clock className="h-5 w-5 text-info" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{formatCurrency(stats.ticketMedio)}</p>
-                <p className="text-xs text-muted-foreground">Ticket médio</p>
+                <p className="text-2xl font-bold">{stats.monthTotal}</p>
+                <p className="text-xs text-muted-foreground">Este mês</p>
               </div>
             </div>
           </CardContent>
