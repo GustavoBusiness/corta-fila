@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import Logo from '@/components/Logo';
 import ThemeToggle from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
+import { BackButton } from '@/components/ui/BackButton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -84,6 +85,10 @@ const Register = () => {
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
       <div className="absolute top-4 right-4">
         <ThemeToggle />
+      </div>
+
+      <div className="absolute top-4 left-4">
+        <BackButton />
       </div>
 
       <div className="w-full max-w-md space-y-6 animate-fade-in">
