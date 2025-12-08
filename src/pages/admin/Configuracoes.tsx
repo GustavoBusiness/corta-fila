@@ -10,7 +10,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Moon, Sun, Bell, Shield, Database, Calendar, Clock, MessageSquare } from 'lucide-react';
+import { Moon, Sun, Bell, Shield, Database, Calendar, Clock, MessageSquare, Package, Plus, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 
 const weekDays = [
   { value: 0, label: 'Domingo' },
@@ -24,13 +25,44 @@ const weekDays = [
 
 const AdminConfiguracoes = () => {
   const { theme, setTheme } = useTheme();
-  const { settings, updateSettings } = useApp();
+  const { settings, updateSettings, products, addProduct, removeProduct } = useApp();
+  const [newProductName, setNewProductName] = useState('');
+  const [newProductPrice, setNewProductPrice] = useState('');
 
   const toggleInactiveDay = (day: number) => {
     const newDays = settings.inactiveDays.includes(day)
       ? settings.inactiveDays.filter(d => d !== day)
       : [...settings.inactiveDays, day];
     updateSettings({ inactiveDays: newDays });
+  };
+
+  const handleAddProduct = () => {
+    if (!newProductName.trim() || !newProductPrice.trim()) {
+      toast.error('Preencha nome e preço do produto');
+      return;
+    }
+
+    const price = parseFloat(newProductPrice);
+    if (isNaN(price) || price <= 0) {
+      toast.error('Preço inválido');
+      return;
+    }
+
+    addProduct({
+      name: newProductName,
+      price: price,
+      stock: 10,
+      image: ''
+    });
+
+    setNewProductName('');
+    setNewProductPrice('');
+    toast.success('Produto adicionado!');
+  };
+
+  const handleRemoveProduct = (productId: string) => {
+    removeProduct(productId);
+    toast.success('Produto removido!');
   };
 
   return (
@@ -88,14 +120,17 @@ const AdminConfiguracoes = () => {
             <Calendar className="h-5 w-5" />
             Configurações da Agenda
           </CardTitle>
-          <CardDescription>Defina como a agenda será liberada</CardDescription>
+          <CardDescription>Defina como a agenda será liberada para clientes</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label>Liberar agenda para quantos meses à frente?</Label>
             <Select 
               value={settings.scheduleMonthsAhead.toString()} 
-              onValueChange={(v) => updateSettings({ scheduleMonthsAhead: parseInt(v) as 1 | 2 | 3 })}
+              onValueChange={(v) => {
+                updateSettings({ scheduleMonthsAhead: parseInt(v) as 1 | 2 | 3 });
+                toast.success('Meses à frente atualizados!');
+              }}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -112,7 +147,10 @@ const AdminConfiguracoes = () => {
             <Label>Intervalo de horários</Label>
             <Select 
               value={settings.timeSlotInterval.toString()} 
-              onValueChange={(v) => updateSettings({ timeSlotInterval: parseInt(v) as 30 | 60 })}
+              onValueChange={(v) => {
+                updateSettings({ timeSlotInterval: parseInt(v) as 30 | 60 });
+                toast.success('Intervalo atualizado!');
+              }}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -132,7 +170,10 @@ const AdminConfiguracoes = () => {
                   key={day.value}
                   size="sm"
                   variant={settings.inactiveDays.includes(day.value) ? 'destructive' : 'outline'}
-                  onClick={() => toggleInactiveDay(day.value)}
+                  onClick={() => {
+                    toggleInactiveDay(day.value);
+                    toast.success('Dia atualizado!');
+                  }}
                 >
                   {day.label}
                 </Button>
@@ -150,6 +191,74 @@ const AdminConfiguracoes = () => {
               onCheckedChange={(checked) => updateSettings({ showProductsInBooking: checked })}
             />
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Produtos */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            Gerenciar Produtos
+          </CardTitle>
+          <CardDescription>Adicione ou remova produtos disponíveis para clientes</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-2">
+                <Label>Nome do produto</Label>
+                <Input
+                  placeholder="Ex: Shampoo Premium"
+                  value={newProductName}
+                  onChange={(e) => setNewProductName(e.target.value)}
+                  maxLength={50}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Preço (R$)</Label>
+                <Input
+                  type="number"
+                  placeholder="0,00"
+                  value={newProductPrice}
+                  onChange={(e) => setNewProductPrice(e.target.value)}
+                  step="0.01"
+                  min="0"
+                />
+              </div>
+            </div>
+            <Button onClick={handleAddProduct} className="w-full gap-2">
+              <Plus className="h-4 w-4" />
+              Adicionar Produto
+            </Button>
+          </div>
+
+          <Separator />
+
+          {products.length > 0 ? (
+            <div className="space-y-2">
+              <Label>Produtos cadastrados</Label>
+              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                {products.map((product) => (
+                  <div key={product.id} className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+                    <div>
+                      <p className="font-medium text-sm">{product.name}</p>
+                      <p className="text-xs text-muted-foreground">R$ {product.price.toFixed(2)}</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleRemoveProduct(product.id)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-center text-muted-foreground py-4">Nenhum produto cadastrado</p>
+          )}
         </CardContent>
       </Card>
 

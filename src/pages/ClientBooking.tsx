@@ -562,7 +562,7 @@ const ClientBooking = () => {
               </div>
             )}
 
-            {/* Step: Professional - Layout horizontal com fotos */}
+            {/* Step: Professional - Layout centralizado */}
             {step === 'professional' && (
               <div className="space-y-4 animate-fade-in">
                 <div className="text-center mb-6">
@@ -572,32 +572,30 @@ const ClientBooking = () => {
                   </p>
                 </div>
                 
-                <ScrollArea className="w-full">
-                  <div className="flex flex-wrap gap-4 pb-4 justify-center">
-                    {availableProfessionals.map((prof, idx) => (
-                      <button
-                        key={prof.id}
-                        onClick={() => handleSelectProfessional(prof)}
-                        className="flex flex-col items-center min-w-[100px] p-4 rounded-xl border border-border bg-card hover:border-primary hover:bg-primary/10 transition-all animate-scale-in"
-                        style={{ animationDelay: `${idx * 50}ms` }}
-                      >
-                        {prof.photo ? (
-                          <img 
-                            src={prof.photo} 
-                            alt={prof.name}
-                            className="h-16 w-16 rounded-full object-cover mb-2"
-                          />
-                        ) : (
-                          <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center mb-2">
-                            <span className="text-xl font-bold text-primary">{prof.avatar}</span>
-                          </div>
-                        )}
-                        <h3 className="font-semibold text-sm text-center">{prof.name}</h3>
-                        <p className="text-xs text-muted-foreground">{prof.role}</p>
-                      </button>
-                    ))}
-                  </div>
-                </ScrollArea>
+                <div className="flex flex-wrap gap-4 justify-center">
+                  {availableProfessionals.map((prof, idx) => (
+                    <button
+                      key={prof.id}
+                      onClick={() => handleSelectProfessional(prof)}
+                      className="flex flex-col items-center min-w-[100px] p-4 rounded-xl border border-border bg-card hover:border-primary hover:bg-primary/10 transition-all animate-scale-in"
+                      style={{ animationDelay: `${idx * 50}ms` }}
+                    >
+                      {prof.photo ? (
+                        <img 
+                          src={prof.photo} 
+                          alt={prof.name}
+                          className="h-16 w-16 rounded-full object-cover mb-2"
+                        />
+                      ) : (
+                        <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center mb-2">
+                          <span className="text-xl font-bold text-primary">{prof.avatar}</span>
+                        </div>
+                      )}
+                      <h3 className="font-semibold text-sm text-center">{prof.name}</h3>
+                      <p className="text-xs text-muted-foreground">{prof.role}</p>
+                    </button>
+                  ))}
+                </div>
                 
                 {availableProfessionals.length === 0 && (
                   <p className="text-center text-muted-foreground py-8">
@@ -607,7 +605,7 @@ const ClientBooking = () => {
               </div>
             )}
 
-            {/* Step: Time - Layout horizontal */}
+            {/* Step: Time */}
             {step === 'time' && (
               <div className="space-y-4 animate-fade-in">
                 <div className="text-center mb-6">
