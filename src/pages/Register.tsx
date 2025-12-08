@@ -105,10 +105,34 @@ const Register = () => {
         return;
       }
 
+      const conflicting_fields = data.conflicting_fields || [];
+
+      if (data.statusCode === 409) {
+        // conflitos específicos
+        if (conflicting_fields.includes('email')) {
+          setErrors(prev => ({ ...prev, userEmail: 'E-mail já cadastrado' }));
+        }
+
+        if (conflicting_fields.includes('phone')) {
+          setErrors(prev => ({ ...prev, userPhone: 'Telefone já cadastrado' }));
+        }
+
+        toast.error('Informações já cadastradas');
+        return; // evita continuar o fluxo
+      }
+
+      // outros erros tratados pelo backend
+      if (data.statusCode && data.statusCode >= 400) {
+        toast.error(data.message || 'Erro ao realizar cadastro');
+        return;
+      }
+
+      // sucesso real
       toast.success('Cadastro realizado com sucesso');
       setStep('success');
 
     } catch (err) {
+      // erro de rede, timeout, backend fora, etc
       toast.error('Erro de conexão com o servidor');
     } finally {
       setIsLoading(false);
