@@ -118,7 +118,6 @@ const EmployeeLayout = () => {
             </Sheet>
 
             <Logo size="sm" />
-            <ThemeToggle />
           </div>
         </header>
 

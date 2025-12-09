@@ -128,7 +128,6 @@ const AdminLayout = () => {
             </Sheet>
 
             <Logo size="sm" />
-            <ThemeToggle />
           </div>
         </header>
 
