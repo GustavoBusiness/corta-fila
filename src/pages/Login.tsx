@@ -57,8 +57,11 @@ const Register = () => {
       }
     };
 
+    const API_URL = import.meta.env.VITE_API_URL;
+
+
     try {
-      const res = await fetch('http://localhost:80/CortaFila_Back/public/users/login', {
+      const res = await fetch(`${API_URL}/users/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -73,7 +76,16 @@ const Register = () => {
       }
 
       toast.success('Login realizado com sucesso');
-      navigate('/admin/agenda');
+
+      localStorage.setItem('cortafila:auth:token', data.token);
+      localStorage.setItem('cortafila:auth:user', JSON.stringify(data.user));
+
+      if (data.user.role === 'admin') {
+        navigate('/admin');
+      } else if (data.user.role === 'employee') {
+        navigate('/funcionario');
+      }
+
     } catch (err) {
       toast.error('Erro de conexão com o servidor');
     } finally {
