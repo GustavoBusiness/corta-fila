@@ -100,7 +100,7 @@ const AdminLayout = () => {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-64 flex-col border-r border-border bg-card">
+      <aside className="hidden lg:flex w-64 flex-col border-r border-border bg-card h-screen">
         <SidebarContent />
       </aside>
 
@@ -114,7 +114,9 @@ const AdminLayout = () => {
                   <Menu className="h-6 w-6" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-64">
+
+              {/* Ajuste aplicado */}
+              <SheetContent side="left" className="p-0 w-64 h-full max-h-screen">
                 <SidebarContent />
               </SheetContent>
             </Sheet>
@@ -122,6 +124,7 @@ const AdminLayout = () => {
             <ThemeToggle />
           </div>
         </header>
+
 
         {/* Desktop Header */}
         <header className="hidden lg:flex sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur">
@@ -132,7 +135,7 @@ const AdminLayout = () => {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 p-4 lg:p-6">
+        <main className="flex-1 p-4 lg:p-6 overflow-auto">
           <Outlet />
         </main>
       </div>
