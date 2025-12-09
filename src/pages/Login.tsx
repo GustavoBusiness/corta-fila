@@ -9,28 +9,32 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Building2, Mail, Phone, MapPin, Lock, ArrowRight, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from "@/contexts/AuthContext";
 
-interface RegisterFormData {
+
+interface LoginFormData {
   userPhone: string;
   password: string;
 }
 
-const Register = () => {
+
+const Login = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<'form' | 'success'>('form');
+  const { userRole, login } = useAuth();
 
-  const [formData, setFormData] = useState<RegisterFormData>({
+  const [formData, setFormData] = useState<LoginFormData>({
     userPhone: '',
     password: ''
   });
 
-  const [errors, setErrors] = useState<Partial<RegisterFormData>>({});
+  const [errors, setErrors] = useState<Partial<LoginFormData>>({});
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<RegisterFormData> = {};
+    const newErrors: Partial<LoginFormData> = {};
     if (!formData.userPhone.trim()) newErrors.userPhone = 'Telefone é obrigatório';
 
     if (!formData.password) newErrors.password = 'Senha é obrigatória';
@@ -39,7 +43,7 @@ const Register = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleInputChange = (field: keyof RegisterFormData, value: string) => {
+  const handleInputChange = (field: keyof LoginFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: undefined }));
   };
@@ -80,12 +84,7 @@ const Register = () => {
       localStorage.setItem('cortafila:auth:token', data.token);
       localStorage.setItem('cortafila:auth:user', JSON.stringify(data.user));
 
-      if (data.user.role === 'admin') {
-        navigate('/admin');
-      } else if (data.user.role === 'employee') {
-        navigate('/funcionario');
-      }
-
+      login(data.user.role, String(data.user.id), data.user.name);
     } catch (err) {
       toast.error('Erro de conexão com o servidor');
     } finally {
@@ -179,4 +178,4 @@ const Register = () => {
   );
 };
 
-export default Register;
+export default Login;

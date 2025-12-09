@@ -28,17 +28,20 @@ export const AuthService = {
         }
       });
 
+      // erro http
       if (!res.ok) return null;
 
-      const data = await res.json();
+      const json = await res.json();
 
-      // garantir que retornou algo útil
-      if (!data || !data.id) return null;
+      // valida estrutura
+      if (!json.success || !json.data) return null;
 
-      return data;
-    } catch {
+      return json.data;
+    } catch (err) {
+      console.log("[AuthService] validateToken ERROR:", err);
       return null;
     }
   }
+
 
 };
