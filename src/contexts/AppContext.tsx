@@ -40,6 +40,7 @@ interface AppContextType {
   updateClient: (id: string, data: Partial<Client>) => void;
   deleteClient: (id: string) => void;
   addProduct: (product: Omit<Product, 'id'>) => void;
+  removeProduct: (id: string) => void;
   updateProduct: (id: string, data: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
   addBlockedDay: (blockedDay: Omit<BlockedDay, 'id'>) => void;

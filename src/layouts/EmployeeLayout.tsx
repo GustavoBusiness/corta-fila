@@ -33,14 +33,17 @@ const EmployeeLayout = () => {
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
+      {/* Logo */}
       <div className="p-4 border-b border-border">
         <Logo size="md" />
       </div>
 
+      {/* Menu */}
       <ScrollArea className="flex-1 py-4">
         <nav className="space-y-1 px-2">
           {menuItems.map((item) => {
             const isActive = location.pathname === item.path;
+
             return (
               <Button
                 key={item.path}
@@ -63,6 +66,7 @@ const EmployeeLayout = () => {
         </nav>
       </ScrollArea>
 
+      {/* User + Logout */}
       <div className="p-4 border-t border-border space-y-2">
         <div className="flex items-center gap-3 px-2 py-2">
           <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center">
@@ -75,6 +79,7 @@ const EmployeeLayout = () => {
             <p className="text-xs text-muted-foreground">Profissional</p>
           </div>
         </div>
+
         <Button
           variant="ghost"
           className="w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-destructive/10"
@@ -88,14 +93,16 @@ const EmployeeLayout = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-64 flex-col border-r border-border bg-card">
+    <div className="bg-background flex">
+      {/* Sidebar fixa — Desktop */}
+      <aside className="hidden lg:flex fixed left-0 top-0 w-64 h-screen flex-col border-r border-border bg-card">
         <SidebarContent />
       </aside>
 
-      {/* Mobile Header */}
-      <div className="flex-1 flex flex-col min-h-screen">
+      {/* Conteúdo principal */}
+      <div className="flex-1 flex flex-col lg:ml-64 h-screen">
+
+        {/* Mobile Header */}
         <header className="lg:hidden sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur">
           <div className="flex items-center justify-between p-4">
             <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
@@ -104,16 +111,18 @@ const EmployeeLayout = () => {
                   <Menu className="h-6 w-6" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-64">
+
+              <SheetContent side="left" className="p-0 w-64 h-full max-h-screen">
                 <SidebarContent />
               </SheetContent>
             </Sheet>
+
             <Logo size="sm" />
             <ThemeToggle />
           </div>
         </header>
 
-        {/* Desktop Header */}
+        {/* Header desktop */}
         <header className="hidden lg:flex sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur">
           <div className="flex items-center justify-between p-4 w-full">
             <div />
@@ -121,10 +130,11 @@ const EmployeeLayout = () => {
           </div>
         </header>
 
-        {/* Main Content */}
-        <main className="flex-1 p-4 lg:p-6">
+        {/* Conteúdo rolável */}
+        <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
           <Outlet />
         </main>
+
       </div>
     </div>
   );
