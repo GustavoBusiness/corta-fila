@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { 
-  appointments as initialAppointments, 
+import {
+  appointments as initialAppointments,
   services as initialServices,
   professionals as initialProfessionals,
   clients as initialClients,
@@ -8,10 +8,10 @@ import {
   blockedDays as initialBlockedDays,
   blockedTimes as initialBlockedTimes,
   defaultSettings,
-  Appointment, 
-  Service, 
-  Professional, 
-  Client, 
+  Appointment,
+  Service,
+  Professional,
+  Client,
   Product,
   BlockedDay,
   BlockedTime,
@@ -63,6 +63,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const saved = localStorage.getItem('corta-fila-settings');
     return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
   });
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -110,7 +111,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Professionals
   const addProfessional = (professional: Omit<Professional, 'id'>) => {
-    setProfessionals(prev => [...prev, { ...professional, id: generateId() }]);
+    const res = fetch(`${API_URL}/employee/create`, {
+      method: 'POST',
+      body: JSON.stringify(professional),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem('cortafila:auth:token')}`
+      }
+    })
+
+    return res;
   };
 
   const updateProfessional = (id: string, data: Partial<Professional>) => {

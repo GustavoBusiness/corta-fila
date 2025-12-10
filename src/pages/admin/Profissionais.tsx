@@ -93,7 +93,11 @@ const AdminProfissionais = () => {
       updateProfessional(editingId, profData);
       toast.success('Profissional atualizado!');
     } else {
-      addProfessional(profData);
+      const data = addProfessional(profData);
+
+      if (data['sucess'] === false) {
+        toast.error('Erro ao adicionar profissional');
+      }
       toast.success('Profissional adicionado!');
     }
     setShowDialog(false);
