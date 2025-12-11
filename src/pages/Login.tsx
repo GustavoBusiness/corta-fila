@@ -1,30 +1,27 @@
 import { useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Logo from '@/components/Logo';
 import ThemeToggle from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { BackButton } from '@/components/ui/BackButton';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Eye, EyeOff, Building2, Mail, Phone, MapPin, Lock, ArrowRight, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from "@/contexts/AuthContext";
-
+import { AuthService } from "@/services/AuthService";
 
 interface LoginFormData {
   userPhone: string;
   password: string;
 }
 
-
 const Login = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<'form' | 'success'>('form');
-  const { userRole, login } = useAuth();
+  const { login } = useAuth();
 
   const [formData, setFormData] = useState<LoginFormData>({
     userPhone: '',
@@ -33,10 +30,13 @@ const Login = () => {
 
   const [errors, setErrors] = useState<Partial<LoginFormData>>({});
 
+  // ============================
+  // VALIDAÇÃO DO FORMULÁRIO
+  // ============================
   const validateForm = (): boolean => {
     const newErrors: Partial<LoginFormData> = {};
-    if (!formData.userPhone.trim()) newErrors.userPhone = 'Telefone é obrigatório';
 
+    if (!formData.userPhone.trim()) newErrors.userPhone = 'Telefone é obrigatório';
     if (!formData.password) newErrors.password = 'Senha é obrigatória';
 
     setErrors(newErrors);
@@ -48,48 +48,31 @@ const Login = () => {
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: undefined }));
   };
 
+  // ============================
+  // SUBMIT DO LOGIN
+  // ============================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
 
     setIsLoading(true);
 
-    const payload = {
-      user: {
-        phone: formData.userPhone,
-        password: formData.password
-      }
-    };
+    // ---- LÓGICA DESACOPLADA ----
+    const result = await AuthService.login(formData.userPhone, formData.password);
 
-    const API_URL = import.meta.env.VITE_API_URL;
-
-
-    try {
-      const res = await fetch(`${API_URL}/users/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await res.json();
-
-      if (data['success'] === false) {
-        toast.error(data.error || data['message'] || 'Erro ao cadastrar empresa');
-        setIsLoading(false);
-        return;
-      }
-
-      toast.success('Login realizado com sucesso');
-
-      localStorage.setItem('cortafila:auth:token', data.token);
-      localStorage.setItem('cortafila:auth:user', JSON.stringify(data.user));
-
-      login(data.user.role, String(data.user.id), data.user.name);
-    } catch (err) {
-      toast.error('Erro de conexão com o servidor');
-    } finally {
+    if (!result.success) {
+      toast.error(result.message);
       setIsLoading(false);
+      return;
     }
+
+    // Sucesso
+    toast.success("Login realizado com sucesso");
+
+    // Atualiza contexto (assim como antes)
+    login(result.user.role, String(result.user.id), result.user.name);
+
+    setIsLoading(false);
   };
 
   return (
@@ -108,7 +91,7 @@ const Login = () => {
             <Logo size="lg" />
           </div>
           <div className="text-center">
-            <h1 className="text-2xl font-bold">Cadastre sua Empresa</h1>
+            <h1 className="text-2xl font-bold">Entre com sua conta</h1>
             <p className="text-muted-foreground">Comece a gerenciar seus agendamentos</p>
           </div>
         </div>
@@ -123,8 +106,8 @@ const Login = () => {
 
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* TELEPHONE */}
 
+              {/* PHONE */}
               <div className="space-y-2">
                 <Label>Telefone</Label>
                 <Input
@@ -136,7 +119,7 @@ const Login = () => {
                 {errors.userPhone && <p className="text-xs text-destructive">{errors.userPhone}</p>}
               </div>
 
-              {/* PASSWORD */}
+              {/* SENHA */}
               <div className="space-y-2">
                 <Label>Senha</Label>
                 <div className="relative">
@@ -163,16 +146,22 @@ const Login = () => {
               <Button type="submit" disabled={isLoading} className="w-full">
                 {isLoading ? 'Carregando...' : 'Login'}
               </Button>
+
             </form>
           </CardContent>
         </Card>
 
         <p className="text-center text-sm text-muted-foreground">
           Já tem conta?{' '}
-          <Button variant="link" className="p-0 h-auto text-primary" onClick={() => navigate('/registro')}>
+          <Button
+            variant="link"
+            className="p-0 h-auto text-primary"
+            onClick={() => navigate('/registro')}
+          >
             Faça Cadastro
           </Button>
         </p>
+
       </div>
     </div>
   );
