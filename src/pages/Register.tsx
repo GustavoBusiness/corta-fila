@@ -28,6 +28,8 @@ const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<'form' | 'success'>('form');
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   const [formData, setFormData] = useState<RegisterFormData>({
     companyName: '',
     companyAddress: '',
@@ -92,7 +94,7 @@ const Register = () => {
     };
 
     try {
-      const res = await fetch('http://localhost:80/CortaFila_Back/public/company/create', {
+      const res = await fetch(`${API_URL}/company/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
