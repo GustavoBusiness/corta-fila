@@ -73,7 +73,7 @@ export const AuthService = {
     if (!token) return null;
 
     try {
-      const res = await fetch(`${API_URL}users/validate`, {
+      const res = await fetch(`${API_URL}/users/validate`, {
         method: "POST",
         body: JSON.stringify({ token }),
         headers: {
