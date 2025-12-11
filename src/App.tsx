@@ -18,6 +18,7 @@ import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ClientBooking from "./pages/ClientBooking";
+import EmployeeSetPassword from "./pages/EmployeeSetPassword";
 
 // Admin
 import AdminLayout from "./layouts/AdminLayout";
@@ -56,6 +57,7 @@ const App = () => {
                 <Route path="/login" element={<Login />} />
                 <Route path="/cadastro" element={<Register />} />
                 <Route path="/agendar" element={<ClientBooking />} />
+                <Route path="/definir-senha" element={<EmployeeSetPassword />} />
 
                 {/* ADMIN */}
                 <Route
