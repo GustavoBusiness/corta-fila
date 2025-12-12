@@ -67,6 +67,17 @@ const AdminDashboard = () => {
     return filtered.sort((a, b) => a.time.localeCompare(b.time));
   }, [appointments, today, now, filterProfessional, filterService]);
 
+  // Todos os agendamentos da agenda (histórico completo)
+  const allAppointments = useMemo(() => {
+    return appointments
+      .filter(a => a.status === 'scheduled' || a.status === 'completed')
+      .sort((a, b) => {
+        const dateA = new Date(`${a.date}T${a.time}`);
+        const dateB = new Date(`${b.date}T${b.time}`);
+        return dateB.getTime() - dateA.getTime(); // Mais recentes primeiro
+      });
+  }, [appointments]);
+
   const upcomingAppointments = useMemo(() => {
     return appointments
       .filter(a => {
@@ -213,18 +224,19 @@ const AdminDashboard = () => {
       </Card>
 
       <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
-        {/* Próximos Agendamentos */}
+        {/* Todos os Agendamentos */}
         <Card className="lg:col-span-2">
           <CardHeader className="pb-3">
             <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Próximos Agendamentos
+              <Calendar className="h-5 w-5" />
+              Todos os Agendamentos
+              <Badge variant="secondary" className="ml-2">{allAppointments.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-[250px] sm:h-[300px] pr-4">
+            <ScrollArea className="h-[300px] sm:h-[400px] pr-4">
               <div className="space-y-3">
-                {upcomingAppointments.map((apt, index) => (
+                {allAppointments.map((apt, index) => (
                   <div
                     key={apt.id}
                     className={`flex items-center gap-2 sm:gap-4 p-2 sm:p-3 rounded-lg border ${getServiceBgColor(apt.serviceType)} animate-fade-in`}
@@ -234,6 +246,9 @@ const AdminDashboard = () => {
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <p className="font-medium text-sm sm:text-base truncate">{apt.clientName}</p>
                         <ServiceTag type={apt.serviceType} />
+                        {apt.status === 'completed' && (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">Concluído</Badge>
+                        )}
                       </div>
                       <p className="text-xs sm:text-sm text-muted-foreground truncate">
                         {apt.serviceName} • {apt.professionalName}
@@ -245,9 +260,9 @@ const AdminDashboard = () => {
                     <WhatsAppButton phone={apt.clientPhone} />
                   </div>
                 ))}
-                {upcomingAppointments.length === 0 && (
+                {allAppointments.length === 0 && (
                   <p className="text-center text-muted-foreground py-8 text-sm">
-                    Nenhum agendamento próximo
+                    Nenhum agendamento encontrado
                   </p>
                 )}
               </div>

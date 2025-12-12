@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useApp } from '@/contexts/AppContext';
 import Logo from '@/components/Logo';
@@ -11,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Moon, Sun, Bell, Shield, Database, Calendar, MessageSquare } from 'lucide-react';
+import { Moon, Sun, Bell, Shield, Database, Calendar, MessageSquare, Upload, Image } from 'lucide-react';
 
 const weekDays = [
   { value: 0, label: 'Domingo' },
@@ -26,12 +27,32 @@ const weekDays = [
 const AdminConfiguracoes = () => {
   const { theme, setTheme } = useTheme();
   const { settings, updateSettings } = useApp();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [companyLogo, setCompanyLogo] = useState<string | null>(settings.companyLogo || null);
 
   const toggleInactiveDay = (day: number) => {
     const newDays = settings.inactiveDays.includes(day)
       ? settings.inactiveDays.filter(d => d !== day)
       : [...settings.inactiveDays, day];
     updateSettings({ inactiveDays: newDays });
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Arquivo muito grande. Máximo 5MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        setCompanyLogo(base64);
+        updateSettings({ companyLogo: base64 });
+        toast.success('Logo atualizada!');
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
@@ -227,6 +248,43 @@ const AdminConfiguracoes = () => {
           <CardDescription>Informações da empresa</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Upload de Logo da Empresa */}
+          <div className="space-y-2">
+            <Label>Logo da Empresa</Label>
+            <div className="flex items-center gap-4">
+              <div 
+                className="h-20 w-20 rounded-lg border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-muted/50 cursor-pointer hover:border-primary transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {companyLogo ? (
+                  <img src={companyLogo} alt="Logo" className="h-full w-full object-cover" />
+                ) : (
+                  <Image className="h-8 w-8 text-muted-foreground" />
+                )}
+              </div>
+              <div className="flex-1">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleLogoUpload}
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="gap-2"
+                >
+                  <Upload className="h-4 w-4" />
+                  Enviar Logo
+                </Button>
+                <p className="text-xs text-muted-foreground mt-1">JPG, PNG. Máx. 5MB</p>
+              </div>
+            </div>
+          </div>
+          <Separator />
           <div className="space-y-2">
             <Label>Nome do Estabelecimento</Label>
             <Input 
