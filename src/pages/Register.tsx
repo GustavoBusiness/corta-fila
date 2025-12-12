@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import Logo from '@/components/Logo';
 import ThemeToggle from '@/components/ThemeToggle';
 import { BackButton } from '@/components/ui/BackButton';
+import PhoneInput from '@/components/PhoneInput';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Eye, EyeOff, Building2, Mail, Phone, MapPin, Lock, ArrowRight, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, Building2, ArrowRight, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface RegisterFormData {
@@ -250,11 +251,10 @@ const Register = () => {
 
               <div className="space-y-2">
                 <Label>Telefone</Label>
-                <Input
-                  placeholder="(11) 99999-9999"
+                <PhoneInput
                   value={formData.userPhone}
-                  onChange={(e) => handleInputChange('userPhone', e.target.value)}
-                  className={errors.userPhone ? 'border-destructive' : ''}
+                  onChange={(value) => handleInputChange('userPhone', value)}
+                  error={!!errors.userPhone}
                 />
                 {errors.userPhone && <p className="text-xs text-destructive">{errors.userPhone}</p>}
               </div>

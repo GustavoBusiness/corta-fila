@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { formatPhone } from '@/lib/mock-data';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import PhoneInput from '@/components/PhoneInput';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +16,8 @@ import {
   Plus,
   Pencil,
   Trash2,
-  UserCircle
+  UserCircle,
+  Upload
 } from 'lucide-react';
 
 const weekDays = [
@@ -244,20 +246,36 @@ const AdminProfissionais = () => {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>URL da Foto</Label>
+              <Label>Foto do Profissional</Label>
               <Input
-                placeholder="https://exemplo.com/foto.jpg"
-                value={photo}
-                onChange={(e) => setPhoto(e.target.value)}
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      setPhoto(ev.target?.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
               />
+              {photo && (
+                <div className="mt-2 flex items-center gap-2">
+                  <img src={photo} alt="Preview" className="h-12 w-12 rounded-full object-cover" />
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setPhoto('')}>
+                    Remover
+                  </Button>
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>WhatsApp *</Label>
-                <Input
-                  placeholder="5511999999999"
+                <PhoneInput
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={setPhone}
                 />
               </div>
               <div className="space-y-2">

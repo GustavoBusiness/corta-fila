@@ -19,6 +19,7 @@ import { formatCurrency, getWhatsAppLink, ServiceType } from '@/lib/mock-data';
 import Logo from '@/components/Logo';
 import ThemeToggle from '@/components/ThemeToggle';
 import ServiceTag from '@/components/ServiceTag';
+import PhoneInput, { formatPhoneMask, cleanPhone, isValidPhone } from '@/components/PhoneInput';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -41,15 +42,6 @@ import {
 } from 'lucide-react';
 
 type Step = 'services' | 'calendar' | 'professional' | 'time' | 'confirm';
-
-// Máscara de telefone
-const formatPhone = (value: string) => {
-  const numbers = value.replace(/\D/g, '');
-  if (numbers.length <= 2) return numbers;
-  if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
-  if (numbers.length <= 11) return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
-  return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
-};
 
 const ClientBooking = () => {
   const { services, professionals, appointments, blockedDays, products, settings, addAppointment, addClient } = useApp();
@@ -212,11 +204,8 @@ const ClientBooking = () => {
     setStep('confirm');
   };
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatPhone(e.target.value);
-    if (formatted.length <= 15) {
-      setClientPhone(formatted);
-    }
+  const handlePhoneChange = (value: string) => {
+    setClientPhone(value);
   };
 
   const toggleProduct = (productId: string) => {
@@ -373,11 +362,9 @@ const ClientBooking = () => {
           <div className="space-y-4 animate-fade-in">
             <div className="space-y-2">
               <Label>Digite seu telefone para buscar</Label>
-              <Input
-                placeholder="(11) 99999-9999"
+              <PhoneInput
                 value={searchPhone}
-                onChange={(e) => setSearchPhone(formatPhone(e.target.value))}
-                maxLength={15}
+                onChange={setSearchPhone}
               />
             </div>
             
@@ -710,11 +697,9 @@ const ClientBooking = () => {
                       <Phone className="h-4 w-4" />
                       Seu WhatsApp
                     </Label>
-                    <Input
-                      placeholder="(11) 99999-9999"
+                    <PhoneInput
                       value={clientPhone}
                       onChange={handlePhoneChange}
-                      maxLength={15}
                     />
                   </div>
                 </div>
