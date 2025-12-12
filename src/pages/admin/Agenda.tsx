@@ -4,6 +4,7 @@ import { formatCurrency, getWhatsAppLink, ServiceType, getServiceBgColor } from 
 import ServiceTag from '@/components/ServiceTag';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import PhoneInput, { formatPhoneMask, isValidPhone } from '@/components/PhoneInput';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -142,9 +143,25 @@ const AdminAgenda = () => {
     setShowNewAppointment(true);
   };
 
+  // Valida se pode marcar no mesmo horário (apenas com profissional diferente)
+  const isTimeSlotAvailable = (date: string, time: string, professionalId: string) => {
+    return !appointments.some(a => 
+      a.date === date && 
+      a.time === time && 
+      a.professionalId === professionalId && 
+      a.status === 'scheduled'
+    );
+  };
+
   const handleCreateAppointment = () => {
     if (!newClientName || !newClientPhone || !newServiceId || !newProfessionalId) {
       toast.error('Preencha todos os campos');
+      return;
+    }
+
+    // Validar conflito: não pode marcar mesmo profissional no mesmo horário
+    if (!isTimeSlotAvailable(selectedDate, selectedTime, newProfessionalId)) {
+      toast.error('Este profissional já tem um agendamento neste horário');
       return;
     }
 
@@ -475,10 +492,9 @@ const AdminAgenda = () => {
             </div>
             <div className="space-y-2">
               <Label>WhatsApp</Label>
-              <Input
-                placeholder="5511999999999"
+              <PhoneInput
                 value={newClientPhone}
-                onChange={(e) => setNewClientPhone(e.target.value)}
+                onChange={setNewClientPhone}
               />
             </div>
             <div className="space-y-2">

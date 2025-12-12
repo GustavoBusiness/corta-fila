@@ -3,6 +3,7 @@ import { useApp } from '@/contexts/AppContext';
 import { formatPhone } from '@/lib/mock-data';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import PhoneInput from '@/components/PhoneInput';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -171,10 +172,9 @@ const AdminClientes = () => {
             </div>
             <div className="space-y-2">
               <Label>WhatsApp *</Label>
-              <Input
-                placeholder="5511999999999"
+              <PhoneInput
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={setPhone}
               />
             </div>
             <div className="space-y-2">

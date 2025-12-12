@@ -1,6 +1,7 @@
 import { useTheme } from '@/contexts/ThemeContext';
 import { useApp } from '@/contexts/AppContext';
 import Logo from '@/components/Logo';
+import PhoneInput from '@/components/PhoneInput';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -10,8 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Moon, Sun, Bell, Shield, Database, Calendar, Clock, MessageSquare, Package, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { Moon, Sun, Bell, Shield, Database, Calendar, MessageSquare } from 'lucide-react';
 
 const weekDays = [
   { value: 0, label: 'Domingo' },
@@ -25,44 +25,13 @@ const weekDays = [
 
 const AdminConfiguracoes = () => {
   const { theme, setTheme } = useTheme();
-  const { settings, updateSettings, products, addProduct, removeProduct } = useApp();
-  const [newProductName, setNewProductName] = useState('');
-  const [newProductPrice, setNewProductPrice] = useState('');
+  const { settings, updateSettings } = useApp();
 
   const toggleInactiveDay = (day: number) => {
     const newDays = settings.inactiveDays.includes(day)
       ? settings.inactiveDays.filter(d => d !== day)
       : [...settings.inactiveDays, day];
     updateSettings({ inactiveDays: newDays });
-  };
-
-  const handleAddProduct = () => {
-    if (!newProductName.trim() || !newProductPrice.trim()) {
-      toast.error('Preencha nome e preço do produto');
-      return;
-    }
-
-    const price = parseFloat(newProductPrice);
-    if (isNaN(price) || price <= 0) {
-      toast.error('Preço inválido');
-      return;
-    }
-
-    addProduct({
-      name: newProductName,
-      price: price,
-      stock: 10,
-      image: ''
-    });
-
-    setNewProductName('');
-    setNewProductPrice('');
-    toast.success('Produto adicionado!');
-  };
-
-  const handleRemoveProduct = (productId: string) => {
-    removeProduct(productId);
-    toast.success('Produto removido!');
   };
 
   return (
@@ -194,73 +163,6 @@ const AdminConfiguracoes = () => {
         </CardContent>
       </Card>
 
-      {/* Produtos */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Gerenciar Produtos
-          </CardTitle>
-          <CardDescription>Adicione ou remova produtos disponíveis para clientes</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-2">
-                <Label>Nome do produto</Label>
-                <Input
-                  placeholder="Ex: Shampoo Premium"
-                  value={newProductName}
-                  onChange={(e) => setNewProductName(e.target.value)}
-                  maxLength={50}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Preço (R$)</Label>
-                <Input
-                  type="number"
-                  placeholder="0,00"
-                  value={newProductPrice}
-                  onChange={(e) => setNewProductPrice(e.target.value)}
-                  step="0.01"
-                  min="0"
-                />
-              </div>
-            </div>
-            <Button onClick={handleAddProduct} className="w-full gap-2">
-              <Plus className="h-4 w-4" />
-              Adicionar Produto
-            </Button>
-          </div>
-
-          <Separator />
-
-          {products.length > 0 ? (
-            <div className="space-y-2">
-              <Label>Produtos cadastrados</Label>
-              <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                {products.map((product) => (
-                  <div key={product.id} className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-sm">{product.name}</p>
-                      <p className="text-xs text-muted-foreground">R$ {product.price.toFixed(2)}</p>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleRemoveProduct(product.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <p className="text-center text-muted-foreground py-4">Nenhum produto cadastrado</p>
-          )}
-        </CardContent>
-      </Card>
 
       {/* WhatsApp Message */}
       <Card>
@@ -332,12 +234,12 @@ const AdminConfiguracoes = () => {
               onChange={(e) => updateSettings({ businessName: e.target.value })}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Telefone</Label>
-              <Input 
+              <PhoneInput 
                 value={settings.businessPhone}
-                onChange={(e) => updateSettings({ businessPhone: e.target.value })}
+                onChange={(value) => updateSettings({ businessPhone: value })}
               />
             </div>
             <div className="space-y-2">
