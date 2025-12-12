@@ -74,7 +74,7 @@ const AdminClientes = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in overflow-x-hidden w-full max-w-full px-4 sm:px-0">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Clientes</h1>
@@ -92,15 +92,15 @@ const AdminClientes = () => {
           placeholder="Buscar por nome ou telefone..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-10"
+          className="pl-10 w-full max-w-full"
         />
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid gap-4 grid-cols-1 w-full max-w-full">
         {filteredClients.map((client, idx) => (
-          <Card key={client.id} className="animate-fade-in" style={{ animationDelay: `${idx * 50}ms` }}>
+          <Card key={client.id} className="animate-fade-in w-full max-w-full" style={{ animationDelay: `${idx * 50}ms` }}>
             <CardContent className="p-4">
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
                   <span className="text-lg font-medium text-primary">
                     {client.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
@@ -108,7 +108,7 @@ const AdminClientes = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold truncate">{client.name}</h3>
+                    <h3 className="font-semibold truncate text-base">{client.name}</h3>
                     <Badge variant="secondary">{client.totalVisits} visitas</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">{formatPhone(client.phone)}</p>
@@ -121,7 +121,7 @@ const AdminClientes = () => {
                     </p>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mt-2 sm:mt-0">
                   <WhatsAppButton phone={client.phone} />
                   <Button
                     size="icon"
@@ -155,7 +155,7 @@ const AdminClientes = () => {
       </div>
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="w-full max-w-full sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
               {editingId ? 'Editar Cliente' : 'Novo Cliente'}
