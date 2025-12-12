@@ -156,7 +156,7 @@ const Login = () => {
           <Button
             variant="link"
             className="p-0 h-auto text-primary"
-            onClick={() => navigate('/registro')}
+            onClick={() => navigate('/cadastro')}
           >
             Faça Cadastro
           </Button>
