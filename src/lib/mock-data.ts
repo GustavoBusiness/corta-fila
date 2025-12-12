@@ -89,6 +89,7 @@ export interface BusinessSettings {
   businessPhone: string;
   businessCnpj: string;
   businessAddress: string;
+  companyLogo?: string; // Base64 da logo da empresa
 }
 
 export const defaultSettings: BusinessSettings = {
