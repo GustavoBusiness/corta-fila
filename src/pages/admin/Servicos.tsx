@@ -68,8 +68,7 @@ const AdminServicos = () => {
       type,
       price: parseFloat(price),
       duration: parseInt(duration),
-      description,
-      color: serviceColors[type].split(' ')[0]
+      description
     };
 
     if (editingId) {

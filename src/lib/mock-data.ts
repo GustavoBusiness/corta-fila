@@ -9,7 +9,6 @@ export interface Service {
   price: number;
   duration: number; // in minutes
   description: string;
-  color: string; // background color for agenda
 }
 
 export interface Professional {
@@ -127,8 +126,7 @@ export const services: Service[] = [
     type: 'corte',
     price: 45,
     duration: 30,
-    description: 'Corte moderno com acabamento perfeito',
-    color: 'bg-info/30'
+    description: 'Corte moderno com acabamento perfeito'
   },
   {
     id: '2',
@@ -136,8 +134,7 @@ export const services: Service[] = [
     type: 'barba',
     price: 35,
     duration: 25,
-    description: 'Barba modelada com toalha quente e produtos premium',
-    color: 'bg-warning/30'
+    description: 'Barba modelada com toalha quente e produtos premium'
   },
   {
     id: '3',
@@ -145,8 +142,7 @@ export const services: Service[] = [
     type: 'combo',
     price: 70,
     duration: 50,
-    description: 'Pacote completo com desconto especial',
-    color: 'bg-primary/30'
+    description: 'Pacote completo com desconto especial'
   },
   {
     id: '4',
@@ -154,8 +150,7 @@ export const services: Service[] = [
     type: 'pigmentacao',
     price: 80,
     duration: 45,
-    description: 'Coloração natural para barba e cabelo',
-    color: 'bg-purple-500/30'
+    description: 'Coloração natural para barba e cabelo'
   },
   {
     id: '5',
@@ -163,8 +158,7 @@ export const services: Service[] = [
     type: 'hidratacao',
     price: 50,
     duration: 40,
-    description: 'Tratamento profundo para fios mais saudáveis',
-    color: 'bg-pink-500/30'
+    description: 'Tratamento profundo para fios mais saudáveis'
   }
 ];
 
