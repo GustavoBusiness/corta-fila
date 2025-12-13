@@ -113,8 +113,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   // ---------------- SERVICES ----------------
-  const addService = (service: Omit<Service, 'id'>) => {
-    setServices(prev => [...prev, { ...service, id: generateId() }]);
+  const addService = async (service: Omit<Service, 'id'>) => {
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${API_URL}/services/create`, {
+        method: 'POST',
+        body: JSON.stringify(service),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("cortafila:auth:token")}`
+        }
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        return { success: false, message: err?.message || 'Erro na requisição' };
+      }
+
+      const data = await res.json();
+
+      return data;
+    } catch {
+      return { success: false, message: 'Erro de conexão com o servidor' };
+    } finally {
+      setLoading(false);
+    }
   };
 
   const updateService = (id: string, data: Partial<Service>) => {
