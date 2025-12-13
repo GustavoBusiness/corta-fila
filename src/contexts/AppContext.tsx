@@ -27,25 +27,35 @@ interface AppContextType {
   blockedDays: BlockedDay[];
   blockedTimes: BlockedTime[];
   settings: BusinessSettings;
+  loading: boolean;
+  setLoading: React.Dispatch<React.SetStateAction<boolean>>;
+
   addAppointment: (appointment: Omit<Appointment, 'id' | 'createdAt'>) => void;
   updateAppointment: (id: string, data: Partial<Appointment>) => void;
   deleteAppointment: (id: string) => void;
+
   addService: (service: Omit<Service, 'id'>) => void;
   updateService: (id: string, data: Partial<Service>) => void;
   deleteService: (id: string) => void;
-  addProfessional: (professional: Omit<Professional, 'id'>) => void;
+
+  addProfessional: (professional: Omit<Professional, 'id'>) => Promise<any>;
   updateProfessional: (id: string, data: Partial<Professional>) => void;
   deleteProfessional: (id: string) => void;
+
   addClient: (client: Omit<Client, 'id'>) => void;
   updateClient: (id: string, data: Partial<Client>) => void;
   deleteClient: (id: string) => void;
+
   addProduct: (product: Omit<Product, 'id'>) => void;
   updateProduct: (id: string, data: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
+
   addBlockedDay: (blockedDay: Omit<BlockedDay, 'id'>) => void;
   removeBlockedDay: (id: string) => void;
+
   addBlockedTime: (blockedTime: Omit<BlockedTime, 'id'>) => void;
   removeBlockedTime: (id: string) => void;
+
   updateSettings: (newSettings: Partial<BusinessSettings>) => void;
 }
 
@@ -59,33 +69,39 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [blockedDays, setBlockedDays] = useState<BlockedDay[]>(initialBlockedDays);
   const [blockedTimes, setBlockedTimes] = useState<BlockedTime[]>(initialBlockedTimes);
+  const [loading, setLoading] = useState(false);
+
   const [settings, setSettings] = useState<BusinessSettings>(() => {
     const saved = localStorage.getItem('corta-fila-settings');
     return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
   });
+
   const API_URL = import.meta.env.VITE_API_URL;
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
-  // Settings
+  // ---------------- SETTINGS ----------------
   const updateSettings = (newSettings: Partial<BusinessSettings>) => {
     const updated = { ...settings, ...newSettings };
     setSettings(updated);
     localStorage.setItem('corta-fila-settings', JSON.stringify(updated));
   };
 
-  // Appointments
+  // ---------------- APPOINTMENTS ----------------
   const addAppointment = (appointment: Omit<Appointment, 'id' | 'createdAt'>) => {
     const newAppointment: Appointment = {
       ...appointment,
       id: generateId(),
       createdAt: new Date().toISOString()
     };
-    setAppointments(prev => [...prev, newAppointment].sort((a, b) => {
-      const dateA = new Date(`${a.date}T${a.time}`);
-      const dateB = new Date(`${b.date}T${b.time}`);
-      return dateA.getTime() - dateB.getTime();
-    }));
+
+    setAppointments(prev =>
+      [...prev, newAppointment].sort((a, b) => {
+        const dateA = new Date(`${a.date}T${a.time}`);
+        const dateB = new Date(`${b.date}T${b.time}`);
+        return dateA.getTime() - dateB.getTime();
+      })
+    );
   };
 
   const updateAppointment = (id: string, data: Partial<Appointment>) => {
@@ -96,7 +112,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setAppointments(prev => prev.filter(apt => apt.id !== id));
   };
 
-  // Services
+  // ---------------- SERVICES ----------------
   const addService = (service: Omit<Service, 'id'>) => {
     setServices(prev => [...prev, { ...service, id: generateId() }]);
   };
@@ -109,18 +125,37 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setServices(prev => prev.filter(s => s.id !== id));
   };
 
-  // Professionals
-  const addProfessional = (professional: Omit<Professional, 'id'>) => {
-    const res = fetch(`${API_URL}/employee/create`, {
-      method: 'POST',
-      body: JSON.stringify(professional),
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem('cortafila:auth:token')}`
-      }
-    })
+  // ---------------- PROFESSIONALS ----------------
+  const addProfessional = async (professional: Omit<Professional, 'id'>) => {
+    setLoading(true);
 
-    return res;
+    try {
+      const res = await fetch(`${API_URL}/employee/create`, {
+        method: 'POST',
+        body: JSON.stringify(professional),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem('cortafila:auth:token')}`
+        }
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        return { success: false, message: err?.message || 'Erro na requisição' };
+      }
+
+      const data = await res.json();
+
+      // Se quiser atualizar a lista local:
+      // setProfessionals(prev => [...prev, { ...professional, id: data.id }]);
+
+      return data;
+
+    } catch {
+      return { success: false, message: 'Erro de conexão com o servidor' };
+    } finally {
+      setLoading(false);
+    }
   };
 
   const updateProfessional = (id: string, data: Partial<Professional>) => {
@@ -131,7 +166,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setProfessionals(prev => prev.filter(p => p.id !== id));
   };
 
-  // Clients
+  // ---------------- CLIENTS ----------------
   const addClient = (client: Omit<Client, 'id'>) => {
     setClients(prev => [...prev, { ...client, id: generateId() }]);
   };
@@ -144,7 +179,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setClients(prev => prev.filter(c => c.id !== id));
   };
 
-  // Products
+  // ---------------- PRODUCTS ----------------
   const addProduct = (product: Omit<Product, 'id'>) => {
     setProducts(prev => [...prev, { ...product, id: generateId() }]);
   };
@@ -157,7 +192,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setProducts(prev => prev.filter(p => p.id !== id));
   };
 
-  // Blocked Days
+  // ---------------- BLOCKED DAYS ----------------
   const addBlockedDay = (blockedDay: Omit<BlockedDay, 'id'>) => {
     setBlockedDays(prev => [...prev, { ...blockedDay, id: generateId() }]);
   };
@@ -166,7 +201,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setBlockedDays(prev => prev.filter(b => b.id !== id));
   };
 
-  // Blocked Times
+  // ---------------- BLOCKED TIMES ----------------
   const addBlockedTime = (blockedTime: Omit<BlockedTime, 'id'>) => {
     setBlockedTimes(prev => [...prev, { ...blockedTime, id: generateId() }]);
   };
@@ -176,36 +211,40 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   return (
-    <AppContext.Provider value={{
-      appointments,
-      services,
-      professionals,
-      clients,
-      products,
-      blockedDays,
-      blockedTimes,
-      settings,
-      addAppointment,
-      updateAppointment,
-      deleteAppointment,
-      addService,
-      updateService,
-      deleteService,
-      addProfessional,
-      updateProfessional,
-      deleteProfessional,
-      addClient,
-      updateClient,
-      deleteClient,
-      addProduct,
-      updateProduct,
-      deleteProduct,
-      addBlockedDay,
-      removeBlockedDay,
-      addBlockedTime,
-      removeBlockedTime,
-      updateSettings
-    }}>
+    <AppContext.Provider
+      value={{
+        appointments,
+        services,
+        professionals,
+        clients,
+        products,
+        blockedDays,
+        blockedTimes,
+        settings,
+        loading,
+        setLoading,
+        addAppointment,
+        updateAppointment,
+        deleteAppointment,
+        addService,
+        updateService,
+        deleteService,
+        addProfessional,
+        updateProfessional,
+        deleteProfessional,
+        addClient,
+        updateClient,
+        deleteClient,
+        addProduct,
+        updateProduct,
+        deleteProduct,
+        addBlockedDay,
+        removeBlockedDay,
+        addBlockedTime,
+        removeBlockedTime,
+        updateSettings
+      }}
+    >
       {children}
     </AppContext.Provider>
   );

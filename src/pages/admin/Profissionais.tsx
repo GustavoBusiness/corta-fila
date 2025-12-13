@@ -31,7 +31,7 @@ const weekDays = [
 ];
 
 const AdminProfissionais = () => {
-  const { professionals, services, addProfessional, updateProfessional, deleteProfessional } = useApp();
+  const { professionals, services, loading, addProfessional, updateProfessional, deleteProfessional, setLoading } = useApp();
   const [showDialog, setShowDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -72,13 +72,14 @@ const AdminProfissionais = () => {
     setShowDialog(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name || !role || !phone) {
       toast.error('Preencha os campos obrigatórios');
       return;
     }
 
     const avatar = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+
     const profData = {
       name,
       avatar,
@@ -91,19 +92,40 @@ const AdminProfissionais = () => {
       workHours: { start: startTime, end: endTime }
     };
 
-    if (editingId) {
-      updateProfessional(editingId, profData);
-      toast.success('Profissional atualizado!');
-    } else {
-      const data = addProfessional(profData);
+    try {
+      let response;
 
-      if (data['sucess'] === false) {
-        toast.error('Erro ao adicionar profissional');
+      if (editingId) {
+        response = await updateProfessional(editingId, profData);
+
+        if (response?.success === false) {
+          toast.error(response.message || 'Erro ao atualizar profissional');
+          return; // Não fecha o modal
+        }
+
+        toast.success('Profissional atualizado!');
+      } else {
+        response = await addProfessional(profData);
+
+        if (response?.success === false) {
+          if (response.inputs === 'email') {
+            toast.error('Já existe um usuário com este email!');
+          }
+          if (response.inputs === 'phone') {
+            toast.error('Já existe um usuário com este telefone!');
+          }
+          return; // Não fecha o modal
+        }
+
+        toast.success('Profissional adicionado!');
       }
-      toast.success('Profissional adicionado!');
+
+      setShowDialog(false); // Fecha só se deu certo
+    } catch (err) {
+      toast.error('Erro inesperado ao salvar o profissional.');
     }
-    setShowDialog(false);
   };
+
 
   const handleDelete = () => {
     if (deleteConfirm) {
@@ -144,7 +166,7 @@ const AdminProfissionais = () => {
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {professionals.map((prof, idx) => (
-          <Card 
+          <Card
             key={prof.id}
             className="group hover:border-primary/50 transition-colors animate-fade-in"
             style={{ animationDelay: `${idx * 50}ms` }}
@@ -152,8 +174,8 @@ const AdminProfissionais = () => {
             <CardContent className="p-4">
               <div className="flex items-start gap-4">
                 {prof.photo ? (
-                  <img 
-                    src={prof.photo} 
+                  <img
+                    src={prof.photo}
                     alt={prof.name}
                     className="h-14 w-14 rounded-full object-cover shrink-0"
                   />
@@ -347,9 +369,10 @@ const AdminProfissionais = () => {
             <Button variant="outline" onClick={() => setShowDialog(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleSave}>
-              {editingId ? 'Salvar' : 'Adicionar'}
+            <Button onClick={handleSave} disabled={loading}>
+              {loading ? 'Salvando...' : editingId ? 'Salvar' : 'Adicionar'}
             </Button>
+
           </DialogFooter>
         </DialogContent>
       </Dialog>
