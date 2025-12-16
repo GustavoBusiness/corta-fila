@@ -3,7 +3,7 @@ import {
   Employee,
   RawEmployee,
   normalizeEmployee,
-} from '@/types/employee';
+} from '@/types/Employee';
 
 export const EmployeeService = {
   async list(): Promise<Employee[]> {
