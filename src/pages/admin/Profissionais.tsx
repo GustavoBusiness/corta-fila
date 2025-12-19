@@ -1,32 +1,23 @@
-import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
-
-import { EmployeeService } from '@/services/EmployeeService';
-import {
-  Employee,
-  CreateEmployeeDTO,
-  UpdateEmployeeDTO,
-} from '@/types/employee';
-
+import { useState, useRef } from 'react';
+import { useApp } from '@/contexts/AppContext';
 import { formatPhone } from '@/lib/mock-data';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import PhoneInput from '@/components/PhoneInput';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-
+import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { toast } from 'sonner';
 import {
   Plus,
   Pencil,
   Trash2,
   UserCircle,
+  Upload
 } from 'lucide-react';
 
 const weekDays = [
@@ -39,175 +30,135 @@ const weekDays = [
   { value: 6, label: 'Sáb' },
 ];
 
-export default function AdminProfissionais() {
-  const [professionals, setProfessionals] = useState<Employee[]>([]);
-  const [loading, setLoading] = useState(false);
-
+const AdminProfissionais = () => {
+  const { professionals, services, loading, addProfessional, updateProfessional, deleteProfessional, setLoading } = useApp();
   const [showDialog, setShowDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-
-  // form
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [photo, setPhoto] = useState('');
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('18:00');
 
-  // ===============================
-  // Load
-  // ===============================
-
-  useEffect(() => {
-    setLoading(true);
-
-    EmployeeService.list()
-      .then(data => {
-        console.log('TIPO:', Array.isArray(data));
-        console.log('DADOS:', data);
-        console.log('PRIMEIRO:', data?.[0]);
-        setProfessionals(data);
-      })
-      .catch(err => toast.error(err.message))
-      .finally(() => setLoading(false));
-  }, []);
-
-
-  // ===============================
-  // Dialog
-  // ===============================
-
-  const handleOpenDialog = (employee?: Employee) => {
-    if (employee) {
-      setEditingId(employee.id);
-      setName(employee.name);
-      setRole(employee.role);
-      setPhone(employee.phone ?? '');
-      setEmail(employee.email);
-      setSelectedServices(employee.serviceIds);
-      setSelectedDays(employee.workDays);
-      setStartTime(employee.workHours.start);
-      setEndTime(employee.workHours.end);
+  const handleOpenDialog = (prof?: typeof professionals[0]) => {
+    if (prof) {
+      setEditingId(prof.id);
+      setName(prof.name);
+      setRole(prof.role);
+      setPhone(prof.phone);
+      setEmail(prof.email);
+      setPhoto(prof.photo || '');
+      setSelectedServices(prof.services);
+      setSelectedDays(prof.workDays);
+      setStartTime(prof.workHours.start);
+      setEndTime(prof.workHours.end);
     } else {
-      resetForm();
+      setEditingId(null);
+      setName('');
+      setRole('');
+      setPhone('');
+      setEmail('');
+      setPhoto('');
+      setSelectedServices([]);
+      setSelectedDays([1, 2, 3, 4, 5]);
+      setStartTime('09:00');
+      setEndTime('18:00');
     }
-
     setShowDialog(true);
   };
 
-  const resetForm = () => {
-    setEditingId(null);
-    setName('');
-    setRole('');
-    setPhone('');
-    setEmail('');
-    setSelectedServices([]);
-    setSelectedDays([1, 2, 3, 4, 5]);
-    setStartTime('09:00');
-    setEndTime('18:00');
-  };
-
-  // ===============================
-  // Save
-  // ===============================
-
   const handleSave = async () => {
     if (!name || !role || !phone) {
-      toast.error('Campos obrigatórios');
+      toast.error('Preencha os campos obrigatórios');
       return;
     }
 
-    const avatar = name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .slice(0, 2)
-      .toUpperCase();
+    const avatar = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
-    const payload: CreateEmployeeDTO = {
+    const profData = {
       name,
-      email,
-      phone,
-      role,
       avatar,
-      serviceIds: selectedServices,
+      photo: photo || undefined,
+      role,
+      phone,
+      email,
+      services: selectedServices,
       workDays: selectedDays,
-      workHours: {
-        start: startTime,
-        end: endTime,
-      },
+      workHours: { start: startTime, end: endTime }
     };
 
-    setLoading(true);
-
     try {
-      let saved: Employee;
+      let response;
 
       if (editingId) {
-        const updatePayload: UpdateEmployeeDTO = payload;
-        saved = await EmployeeService.update(editingId, updatePayload);
+        response = await updateProfessional(editingId, profData);
 
-        setProfessionals(prev =>
-          prev.map(p => (p.id === saved.id ? saved : p))
-        );
+        if (response?.success === false) {
+          toast.error(response.message || 'Erro ao atualizar profissional');
+          return; // Não fecha o modal
+        }
 
-        toast.success('Profissional atualizado');
+        toast.success('Profissional atualizado!');
       } else {
-        saved = await EmployeeService.create(payload);
-        setProfessionals(prev => [...prev, saved]);
+        response = await addProfessional(profData);
 
-        toast.success('Profissional criado');
+        if (response?.success === false) {
+          if (response.inputs === 'email') {
+            toast.error('Já existe um usuário com este email!');
+          }
+          if (response.inputs === 'phone') {
+            toast.error('Já existe um usuário com este telefone!');
+          }
+          return; // Não fecha o modal
+        }
+
+        toast.success('Profissional adicionado!');
       }
 
-      setShowDialog(false);
-      resetForm();
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setLoading(false);
+      setShowDialog(false); // Fecha só se deu certo
+    } catch (err) {
+      toast.error('Erro inesperado ao salvar o profissional.');
     }
+
   };
 
-  // ===============================
-  // Delete
-  // ===============================
 
-  const handleDelete = async () => {
-    if (!deleteConfirm) return;
-
-    setLoading(true);
-
-    try {
-      await EmployeeService.remove(deleteConfirm);
-      setProfessionals(prev =>
-        prev.filter(p => p.id !== deleteConfirm)
-      );
-      toast.success('Profissional excluído');
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
+  const handleDelete = () => {
+    if (deleteConfirm) {
+      deleteProfessional(deleteConfirm);
+      toast.success('Profissional excluído!');
       setDeleteConfirm(null);
-      setLoading(false);
     }
   };
 
-  // ===============================
-  // Render
-  // ===============================
+  const toggleService = (serviceId: string) => {
+    setSelectedServices(prev =>
+      prev.includes(serviceId)
+        ? prev.filter(s => s !== serviceId)
+        : [...prev, serviceId]
+    );
+  };
+
+  const toggleDay = (day: number) => {
+    setSelectedDays(prev =>
+      prev.includes(day)
+        ? prev.filter(d => d !== day)
+        : [...prev, day]
+    );
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Profissionais</h1>
-          <p className="text-muted-foreground">
-            {professionals.length} profissionais cadastrados
-          </p>
+          <p className="text-muted-foreground">{professionals.length} profissionais cadastrados</p>
         </div>
-
         <Button onClick={() => handleOpenDialog()} className="gap-2">
           <Plus className="h-4 w-4" />
           Novo Profissional
@@ -215,53 +166,52 @@ export default function AdminProfissionais() {
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {professionals.map(prof => (
-          <Card key={prof.id}>
+        {professionals.map((prof, idx) => (
+          <Card
+            key={prof.id}
+            className="group hover:border-primary/50 transition-colors animate-fade-in"
+            style={{ animationDelay: `${idx * 50}ms` }}
+          >
             <CardContent className="p-4">
-              <div className="flex gap-4">
-                <div className="h-14 w-14 rounded-full bg-primary/20 flex items-center justify-center">
-                  <span className="font-bold">
-                    {prof.avatar}
-                  </span>
-                </div>
-
-                <div className="flex-1">
-                  <h3 className="font-semibold">{prof.name}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {prof.role}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {prof.phone ? formatPhone(prof.phone) : ''}
-                  </p>
+              <div className="flex items-start gap-4">
+                {prof.photo ? (
+                  <img
+                    src={prof.photo}
+                    alt={prof.name}
+                    className="h-14 w-14 rounded-full object-cover shrink-0"
+                  />
+                ) : (
+                  <div className="h-14 w-14 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                    <span className="text-xl font-bold text-primary">{prof.avatar}</span>
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold truncate">{prof.name}</h3>
+                  <p className="text-sm text-muted-foreground">{prof.role}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{formatPhone(prof.phone)}</p>
                 </div>
               </div>
 
-              <div className="mt-4 border-t pt-4">
+              <div className="mt-4 pt-4 border-t border-border">
+                <p className="text-xs text-muted-foreground mb-2">Dias de trabalho</p>
                 <div className="flex gap-1 flex-wrap">
-                  {weekDays.map(day => (
+                  {weekDays.map((day) => (
                     <Badge
                       key={day.value}
-                      variant={
-                        prof.workDays.includes(day.value)
-                          ? 'default'
-                          : 'secondary'
-                      }
+                      variant={prof.workDays.includes(day.value) ? 'default' : 'secondary'}
+                      className="text-xs"
                     >
                       {day.label}
                     </Badge>
                   ))}
                 </div>
-
-                <p className="text-xs mt-2">
+                <p className="text-xs text-muted-foreground mt-2">
                   {prof.workHours.start} - {prof.workHours.end}
                 </p>
               </div>
 
-              <div className="mt-4 flex justify-end gap-1">
-                {prof.phone && (
-                  <WhatsAppButton phone={prof.phone} />
-                )}
-
+              <div className="mt-4 flex items-center justify-end gap-1">
+                <WhatsAppButton phone={prof.phone} />
                 <Button
                   size="icon"
                   variant="ghost"
@@ -269,7 +219,6 @@ export default function AdminProfissionais() {
                 >
                   <Pencil className="h-4 w-4" />
                 </Button>
-
                 <Button
                   size="icon"
                   variant="ghost"
@@ -286,47 +235,160 @@ export default function AdminProfissionais() {
         {professionals.length === 0 && (
           <Card className="col-span-full">
             <CardContent className="p-8 text-center">
-              <UserCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">
-                Nenhum profissional cadastrado
-              </p>
+              <UserCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">Nenhum profissional cadastrado</p>
             </CardContent>
           </Card>
         )}
       </div>
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingId ? 'Editar Profissional' : 'Novo Profissional'}
             </DialogTitle>
           </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Nome *</Label>
+                <Input
+                  placeholder="Nome completo"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Cargo *</Label>
+                <Input
+                  placeholder="Ex: Barbeiro Senior"
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Foto do Profissional</Label>
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      setPhoto(ev.target?.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+              {photo && (
+                <div className="mt-2 flex items-center gap-2">
+                  <img src={photo} alt="Preview" className="h-12 w-12 rounded-full object-cover" />
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setPhoto('')}>
+                    Remover
+                  </Button>
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>WhatsApp *</Label>
+                <PhoneInput
+                  value={phone}
+                  onChange={setPhone}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>E-mail</Label>
+                <Input
+                  type="email"
+                  placeholder="email@exemplo.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+            </div>
 
-          <DialogFooter>
+            <div className="space-y-2">
+              <Label>Dias de Trabalho</Label>
+              <div className="flex gap-2 flex-wrap">
+                {weekDays.map((day) => (
+                  <Button
+                    key={day.value}
+                    type="button"
+                    size="sm"
+                    variant={selectedDays.includes(day.value) ? 'default' : 'outline'}
+                    onClick={() => toggleDay(day.value)}
+                  >
+                    {day.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Horário Início</Label>
+                <Input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Horário Fim</Label>
+                <Input
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Serviços</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {services.map((service) => (
+                  <label
+                    key={service.id}
+                    className="flex items-center gap-2 p-2 rounded border border-border cursor-pointer hover:bg-secondary/50"
+                  >
+                    <Checkbox
+                      checked={selectedServices.includes(service.id)}
+                      onCheckedChange={() => toggleService(service.id)}
+                    />
+                    <span className="text-sm">{service.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setShowDialog(false)}>
               Cancelar
             </Button>
             <Button onClick={handleSave} disabled={loading}>
-              {loading
-                ? 'Salvando...'
-                : editingId
-                  ? 'Salvar'
-                  : 'Adicionar'}
+              {loading ? 'Salvando...' : editingId ? 'Salvar' : 'Adicionar'}
             </Button>
+
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <ConfirmDialog
         open={!!deleteConfirm}
-        onOpenChange={open => !open && setDeleteConfirm(null)}
+        onOpenChange={(open) => !open && setDeleteConfirm(null)}
         title="Excluir Profissional"
-        description="Tem certeza que deseja excluir este profissional?"
+        description="Tem certeza que deseja excluir este profissional? Esta ação não pode ser desfeita."
         onConfirm={handleDelete}
         confirmText="Excluir"
         variant="destructive"
       />
     </div>
   );
-}
+};
+
+export default AdminProfissionais;
