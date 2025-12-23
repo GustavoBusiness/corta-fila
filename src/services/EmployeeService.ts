@@ -9,17 +9,17 @@ import {
 
 export const EmployeeService = {
   async list(): Promise<Employee[]> {
-    const raw = await http<RawEmployee[]>('/employee');
+    const raw = await http<RawEmployee[]>('/profissionals');
     return raw.map(normalizeEmployee);
   },
 
   async getById(id: string): Promise<Employee> {
-    const raw = await http<RawEmployee>(`/employee/${id}`);
+    const raw = await http<RawEmployee>(`/profissionals/${id}`);
     return normalizeEmployee(raw);
   },
 
   async create(payload: CreateEmployeeDTO): Promise<Employee> {
-    const raw = await http<RawEmployee>('/employee/create', {
+    const raw = await http<RawEmployee>('/profissionals/create', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
@@ -28,7 +28,7 @@ export const EmployeeService = {
   },
 
   async update(id: string, payload: UpdateEmployeeDTO): Promise<Employee> {
-    const raw = await http<RawEmployee>(`/employee/${id}`, {
+    const raw = await http<RawEmployee>(`/profissionals/${id}`, {
       method: 'PUT',
       body: JSON.stringify(payload),
     });
@@ -37,6 +37,6 @@ export const EmployeeService = {
   },
 
   async remove(id: string): Promise<void> {
-    await http<void>(`/employee/${id}`, { method: 'DELETE' });
+    await http<void>(`/profissionals/${id}`, { method: 'DELETE' });
   },
 };

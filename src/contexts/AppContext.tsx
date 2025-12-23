@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import {
   appointments as initialAppointments,
   services as initialServices,
@@ -17,11 +17,13 @@ import {
   BlockedTime,
   BusinessSettings
 } from '@/lib/mock-data';
+import { EmployeeService } from '@/services/EmployeeService';
+import { Employee } from '@/types/Employee';
 
 interface AppContextType {
   appointments: Appointment[];
   services: Service[];
-  professionals: Professional[];
+  professionals: Professional[] | Employee[];
   clients: Client[];
   products: Product[];
   blockedDays: BlockedDay[];
@@ -38,9 +40,9 @@ interface AppContextType {
   updateService: (id: string, data: Partial<Service>) => void;
   deleteService: (id: string) => void;
 
-  addProfessional: (professional: Omit<Professional, 'id'>) => Promise<any>;
-  updateProfessional: (id: string, data: Partial<Professional>) => void;
-  deleteProfessional: (id: string) => void;
+  addProfessional: (professional: any) => Promise<any>;
+  updateProfessional: (id: string, data: any) => Promise<any>;
+  deleteProfessional: (id: string) => Promise<any>;
 
   addClient: (client: Omit<Client, 'id'>) => void;
   updateClient: (id: string, data: Partial<Client>) => void;
@@ -64,7 +66,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [appointments, setAppointments] = useState<Appointment[]>(initialAppointments);
   const [services, setServices] = useState<Service[]>(initialServices);
-  const [professionals, setProfessionals] = useState<Professional[]>(initialProfessionals);
+  const [professionals, setProfessionals] = useState<Employee[]>([]);
   const [clients, setClients] = useState<Client[]>(initialClients);
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [blockedDays, setBlockedDays] = useState<BlockedDay[]>(initialBlockedDays);
@@ -77,6 +79,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
 
   const API_URL = import.meta.env.VITE_API_URL;
+
+  // Carregar profissionais do backend ao montar o componente
+  useEffect(() => {
+    const loadProfessionals = async () => {
+      try {
+        setLoading(true);
+        const data = await EmployeeService.list();
+        setProfessionals(data);
+      } catch (error) {
+        console.error('Erro ao carregar profissionais:', error);
+        // Fallback para dados mockados em caso de erro
+        setProfessionals(initialProfessionals as unknown as Employee[]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProfessionals();
+  }, []);
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -150,44 +171,49 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   // ---------------- PROFESSIONALS ----------------
-  const addProfessional = async (professional: Omit<Professional, 'id'>) => {
+  const addProfessional = async (professional: any) => {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}/employee/create`, {
-        method: 'POST',
-        body: JSON.stringify(professional),
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem('cortafila:auth:token')}`
-        }
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => null);
-        return { success: false, message: err?.message || 'Erro na requisição' };
-      }
-
-      const data = await res.json();
-
-      // Se quiser atualizar a lista local:
-      // setProfessionals(prev => [...prev, { ...professional, id: data.id }]);
-
-      return data;
-
-    } catch {
-      return { success: false, message: 'Erro de conexão com o servidor' };
+      const newProfessional = await EmployeeService.create(professional);
+      setProfessionals(prev => [...prev, newProfessional]);
+      return { success: true, data: newProfessional };
+    } catch (error: any) {
+      const message = error?.message || 'Erro ao criar profissional';
+      return { success: false, message };
     } finally {
       setLoading(false);
     }
   };
 
-  const updateProfessional = (id: string, data: Partial<Professional>) => {
-    setProfessionals(prev => prev.map(p => p.id === id ? { ...p, ...data } : p));
+  const updateProfessional = async (id: string, data: any) => {
+    setLoading(true);
+
+    try {
+      const updated = await EmployeeService.update(id, data);
+      setProfessionals(prev => prev.map(p => p.id === id ? updated : p));
+      return { success: true, data: updated };
+    } catch (error: any) {
+      const message = error?.message || 'Erro ao atualizar profissional';
+      return { success: false, message };
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deleteProfessional = (id: string) => {
-    setProfessionals(prev => prev.filter(p => p.id !== id));
+  const deleteProfessional = async (id: string) => {
+    setLoading(true);
+
+    try {
+      await EmployeeService.remove(id);
+      setProfessionals(prev => prev.filter(p => p.id !== id));
+      return { success: true };
+    } catch (error: any) {
+      const message = error?.message || 'Erro ao excluir profissional';
+      return { success: false, message };
+    } finally {
+      setLoading(false);
+    }
   };
 
   // ---------------- CLIENTS ----------------

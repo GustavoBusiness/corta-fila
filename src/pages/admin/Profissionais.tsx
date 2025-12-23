@@ -78,15 +78,12 @@ const AdminProfissionais = () => {
       return;
     }
 
-    const avatar = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-
     const profData = {
       name,
-      avatar,
-      photo: photo || undefined,
       role,
       phone,
-      email,
+      email: email || undefined,
+      photo: photo || undefined,
       services: selectedServices,
       workDays: selectedDays,
       workHours: { start: startTime, end: endTime }
@@ -100,7 +97,7 @@ const AdminProfissionais = () => {
 
         if (response?.success === false) {
           toast.error(response.message || 'Erro ao atualizar profissional');
-          return; // Não fecha o modal
+          return;
         }
 
         toast.success('Profissional atualizado!');
@@ -108,19 +105,14 @@ const AdminProfissionais = () => {
         response = await addProfessional(profData);
 
         if (response?.success === false) {
-          if (response.inputs === 'email') {
-            toast.error('Já existe um usuário com este email!');
-          }
-          if (response.inputs === 'phone') {
-            toast.error('Já existe um usuário com este telefone!');
-          }
-          return; // Não fecha o modal
+          toast.error(response.message || 'Erro ao criar profissional');
+          return;
         }
 
         toast.success('Profissional adicionado!');
       }
 
-      setShowDialog(false); // Fecha só se deu certo
+      setShowDialog(false);
     } catch (err) {
       toast.error('Erro inesperado ao salvar o profissional.');
     }
@@ -128,9 +120,15 @@ const AdminProfissionais = () => {
   };
 
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deleteConfirm) {
-      deleteProfessional(deleteConfirm);
+      const response = await deleteProfessional(deleteConfirm);
+      
+      if (response?.success === false) {
+        toast.error(response.message || 'Erro ao excluir profissional');
+        return;
+      }
+      
       toast.success('Profissional excluído!');
       setDeleteConfirm(null);
     }

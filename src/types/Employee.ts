@@ -18,9 +18,15 @@ export interface Employee {
 
   phone: string | null;
 
+  email?: string;
+
   role: string;
 
   avatar: string;
+
+  photo?: string;
+
+  services: string[]; // IDs dos serviços que atende
 
   workDays: number[]; 
   workHours: WorkHours;
@@ -34,7 +40,7 @@ export interface Employee {
 
 export interface CreateEmployeeDTO {
   name: string;
-  email: string;
+  email?: string;
   phone: string;
   role: string;
   avatar?: string;
@@ -54,12 +60,22 @@ export type UpdateEmployeeDTO = Partial<CreateEmployeeDTO>;
 export interface RawEmployee {
   id: number;
   name: string;  
-  role: string;
+  role: string | null;
   phone: string | null;
   avatar: string | null;
-  work_days: number[];
-  work_hours_start: string;
-  work_hours_end: string;
+  email?: string;
+  photo?: string;
+  services?: Array<{
+    id: string;
+    name: string;
+    duration: number;
+    price?: number;
+  }>;
+  professional_working_hours?: Array<{
+    day: number;
+    start_time: string;
+    end_time: string;
+  }>;
   created_at: string;
 }
 
@@ -69,6 +85,17 @@ export interface RawEmployee {
 // ================================
 
 export function normalizeEmployee(raw: RawEmployee): Employee {
+  // Agregar work_days e work_hours da tabela professional_working_hours
+  const workingHours = raw.professional_working_hours || [];
+  const workDays = [...new Set(workingHours.map(wh => wh.day))].sort();
+  
+  // Se houver múltiplos horários por dia, usar o primeiro (ou você pode implementar lógica diferente)
+  const firstWorkingHour = workingHours[0];
+  const workHours: WorkHours = {
+    start: firstWorkingHour?.start_time || '09:00',
+    end: firstWorkingHour?.end_time || '18:00',
+  };
+
   return {
     id: String(raw.id),
 
@@ -76,7 +103,9 @@ export function normalizeEmployee(raw: RawEmployee): Employee {
 
     phone: raw.phone,
 
-    role: raw.role,
+    email: raw.email,
+
+    role: raw.role || 'Profissional',
 
     avatar:
       raw.avatar ??
@@ -87,11 +116,12 @@ export function normalizeEmployee(raw: RawEmployee): Employee {
         .slice(0, 2)
         .toUpperCase(),
 
-    workDays: raw.work_days,
-    workHours: {
-      start: raw.work_hours_start,
-      end: raw.work_hours_end,
-    },
+    photo: raw.photo,
+
+    services: raw.services?.map(s => String(s.id)) || [],
+
+    workDays: workDays.length > 0 ? workDays : [1, 2, 3, 4, 5],
+    workHours,
     createdAt: raw.created_at,
   };
 }
